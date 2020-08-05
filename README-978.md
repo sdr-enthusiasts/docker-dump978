@@ -22,7 +22,7 @@ Adds the capability based on the thebiggerguy/docker-ads-b
         DUMP1090_TAR_HASH: 5db0643be49a69148ef61abdd40acc9b633fac90a238dae5e18b95091bb983f4
     ports:
       - "30002:30002/tcp"
-      - "30005:30005/tcp"
+#      - "30005:30005/tcp"
     devices:
       - "/dev/bus/usb/002/004"
     env_file:
