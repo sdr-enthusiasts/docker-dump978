@@ -102,12 +102,12 @@ LABEL maintainer="thebigguy.co.uk@gmail.com" \
       org.label-schema.schema-version="1.0"
 ```
 
-# Contents of dump978/launch_dump978.sh
+## Content of dump978/launch_dump978.sh
 
 I could never get this work as an ENTRYPOINT line, so I created this tiny script to launch it. Note that you must chmod it to 755 or it won't launch inside the container. Also, note that adsb.lan is the FQDN of my primary ADS-B receiving Pi on my internal network. This solution rewrites 978 traffic (both direct and rebroadcast) as 1090-compatible traffic data and sends it over the network to where I have readsb running. You must allow readsb to accept traffic on port 30001.
 
 ```
 #/bin/sh
 
-/usr/bin/rtl_sdr -f 978000000 -s 2083334 -g 48 - | /usr/local/bin/dump978 | /usr/local/bin/uat2esnt | /usr/bin/nc readsb.lan 30001
+/usr/bin/rtl_sdr -d 1 -f 978000000 -s 2083334 -g 48 - | /usr/local/bin/dump978 | /usr/local/bin/uat2esnt | /usr/bin/nc readsb.lan 30001
 ```
