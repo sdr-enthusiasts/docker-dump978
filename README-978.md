@@ -22,7 +22,7 @@ Adds the capability based on the thebiggerguy/docker-ads-b
         DUMP1090_TAR_HASH: 5db0643be49a69148ef61abdd40acc9b633fac90a238dae5e18b95091bb983f4
     ports:
       - "30002:30002/tcp"
-      - "30005:30005/tcp"
+#      - "30005:30005/tcp"
     devices:
       - "/dev/bus/usb/002/004"
     env_file:
@@ -42,7 +42,7 @@ Adds the capability based on the thebiggerguy/docker-ads-b
 
 ```
 # Base Image ##################################################################
-FROM multiarch/alpine:amd64-v3.9 as base
+FROM multiarch/alpine:aarch64-v3.9 as base
 
 RUN cat /etc/apk/repositories && \
     echo '@edge http://nl.alpinelinux.org/alpine/edge/main' >> /etc/apk/repositories && \
@@ -109,5 +109,5 @@ I could never get this work as an ENTRYPOINT line, so I created this tiny script
 ```
 #/bin/sh
 
-/usr/bin/rtl_sdr -f 978000000 -s 2083334 -g 48 - | /usr/local/bin/dump978 | /usr/local/bin/uat2esnt | /usr/bin/nc adsb.lan 30001
+/usr/bin/rtl_sdr -f 978000000 -s 2083334 -g 48 - | /usr/local/bin/dump978 | /usr/local/bin/uat2esnt | /usr/bin/nc readsb.lan 30001
 ```
