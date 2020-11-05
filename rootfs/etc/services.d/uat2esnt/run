@@ -3,6 +3,8 @@
 
 set -eo pipefail
 
+sleep 5
+
 socat -d -u "TCP:127.0.0.1:30978,keepalive,keepidle=30,keepintvl=30,keepcnt=2" STDOUT | \
 uat2esnt | \
 socat -d -u STDIN "TCP-LISTEN:37981,keepalive,keepidle=30,keepintvl=30,keepcnt=2,fork" \
