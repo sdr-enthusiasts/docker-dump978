@@ -19,6 +19,8 @@ RUN set -x && \
     TEMP_PACKAGES+=(cmake) && \
     TEMP_PACKAGES+=(curl) && \
     TEMP_PACKAGES+=(git) && \
+    # Required for nicer logging.
+    KEPT_PACKAGES+=(gawk) && \
     # s6-overlay dependencies
     TEMP_PACKAGES+=(gnupg2) && \
     TEMP_PACKAGES+=(file) && \
