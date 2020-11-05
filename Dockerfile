@@ -76,6 +76,7 @@ RUN set -x && \
     pushd "/src/SoapyRTLSDR" && \
     BRANCH_SOAPYRTLSDR=$(git tag --sort="-creatordate" | head -1) && \
     git checkout "${BRANCH_SOAPYRTLSDR}" && \
+    echo "SoapyRTLSDR ${BRANCH_SOAPYRTLSDR}" >> /VERSIONS && \
     mkdir -p "/src/SoapyRTLSDR/build" && \
     pushd "/src/SoapyRTLSDR/build" && \
     cmake ../ -DCMAKE_BUILD_TYPE=Release && \
