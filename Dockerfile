@@ -26,7 +26,6 @@ RUN set -x && \
     # rtl-sdr dependencies
     TEMP_PACKAGES+=(pkg-config) && \
     # dump978 dependencies
-    # TEMP_PACKAGES+=(libboost1.67-dev) && \
     TEMP_PACKAGES+=(libboost-dev) && \
     TEMP_PACKAGES+=(libboost-system-dev) && \
     TEMP_PACKAGES+=(libboost-program-options-dev) && \
