@@ -30,12 +30,12 @@ while [[ "$EXITCODE" -ne 0 ]]; do
     fi
 done
 
-# Get readsb version from latest
-docker pull "${REPO}/${IMAGE}:${LATEST_TAG}"
-VERSION=$(docker run --rm --entrypoint readsb "${REPO}/${IMAGE}:${LATEST_TAG}" --version | cut -d " " -f 2)
+# # Get readsb version from latest
+# docker pull "${REPO}/${IMAGE}:${LATEST_TAG}"
+# VERSION=$(docker run --rm --entrypoint readsb "${REPO}/${IMAGE}:${LATEST_TAG}" --version | cut -d " " -f 2)
 
-# Build & push version-specific
-docker buildx build -t "${REPO}/${IMAGE}:${VERSION}" --compress --push --platform "${PLATFORMS}" .
+# # Build & push version-specific
+# docker buildx build -t "${REPO}/${IMAGE}:${VERSION}" --compress --push --platform "${PLATFORMS}" .
 
 # # BUILD NOHEALTHCHECK VERSION
 # # Modify dockerfile to remove healthcheck
