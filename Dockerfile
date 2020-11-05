@@ -28,9 +28,9 @@ RUN set -x && \
     KEPT_PACKAGES+=(libboost-system1.67.0) && \
     TEMP_PACKAGES+=(libboost-program-options1.67-dev) && \
     KEPT_PACKAGES+=(libboost-program-options1.67.0) && \
-    TEMP_PACKAGES+=(libboost-regex1.67.0-dev) && \
+    TEMP_PACKAGES+=(libboost-regex1.67-dev) && \
     KEPT_PACKAGES+=(libboost-regex1.67.0) && \
-    TEMP_PACKAGES+=(libboost-filesystem1.67.0-dev) && \
+    TEMP_PACKAGES+=(libboost-filesystem1.67-dev) && \
     KEPT_PACKAGES+=(libboost-filesystem1.67.0) && \
     # Install packages.
     apt-get update && \
@@ -79,7 +79,6 @@ RUN set -x && \
     cp -v faup978 "/usr/lib/piaware/helpers/" && \
     mkdir -p "/usr/share/dump978-fa/html" && \
     cp -a "/src/dump978/skyaware/"* "/usr/share/dump978-fa/html/" && \
-    dump978-fa --version >> /VERSIONS || true && \
     popd && \
     # Deploy s6-overlay.
     curl -s https://raw.githubusercontent.com/mikenye/deploy-s6-overlay/master/deploy-s6-overlay.sh | sh && \
