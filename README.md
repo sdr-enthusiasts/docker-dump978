@@ -1,5 +1,20 @@
 # mikenye/dump978
 
+## Up and Running - `docker run`
+
+```bash
+docker run \
+    -d \
+    --restart=always \
+    -it \
+    --name dump978 \
+    -p 30978:30978 \
+    -p 30979:30979 \
+    --device /dev/bus/usb:/dev/bus/usb \
+    -e DUMP978_RTLSDR_DEVICE=00000978 \
+    mikenye/dump978
+```
+
 ## Environment Variables
 
 ### Container Options
