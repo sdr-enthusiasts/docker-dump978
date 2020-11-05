@@ -10,4 +10,4 @@ uat2esnt 2>&4 | \
 socat -d -d -u STDIN "TCP-LISTEN:37981,fork" \
 2>&1 | stdbuf -o0 sed --unbuffered '/^$/d' | stdbuf -o0 awk '{print "[uat2esnt_socat_ext] " strftime("%Y/%m/%d %H:%M:%S", systime()) " " $0}' | \
 3>&1 | stdbuf -o0 sed --unbuffered '/^$/d' | stdbuf -o0 awk '{print "[uat2esnt_socat_int] " strftime("%Y/%m/%d %H:%M:%S", systime()) " " $0}' | \
-4>&1 | stdbuf -o0 sed --unbuffered '/^$/d' | stdbuf -o0 awk '{print "[uat2esnt] " strftime("%Y/%m/%d %H:%M:%S", systime()) " " $0}' | \
+4>&1 | stdbuf -o0 sed --unbuffered '/^$/d' | stdbuf -o0 awk '{print "[uat2esnt] " strftime("%Y/%m/%d %H:%M:%S", systime()) " " $0}'
