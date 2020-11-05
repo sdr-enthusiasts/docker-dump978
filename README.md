@@ -2,6 +2,12 @@
 
 ## Environment Variables
 
+### Container Options
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `TZ` | Local timezone in ["TZ database name" format](<https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>). | `UTC` |
+
 ### `dump978-fa` General Options
 
 Where the default value is "Unset", `dump978-fa`'s default will be used.
