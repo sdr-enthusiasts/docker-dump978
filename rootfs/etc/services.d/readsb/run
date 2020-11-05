@@ -5,10 +5,10 @@
 DUMP978_BIN="/usr/local/bin/dump978-fa"
 
 # Listen on 0.0.0.0:DUMP978_RAW_PORT for raw messages
-DUMP978_CMD=("--raw-port" "0.0.0.0:${DUMP978_RAW_PORT:-30978}")
+DUMP978_CMD=("--raw-port" "0.0.0.0:30978}")
 
 # Listen on 0.0.0.0:DUMP978_JSON_PORT for json messages
-DUMP978_CMD+=("--json-port" "0.0.0.0:${DUMP978_JSON_PORT:-30979}")
+DUMP978_CMD+=("--json-port" "0.0.0.0:30979}")
 
 # Handle "--sdr"
 if [[ -n "${DUMP978_DEVICE_TYPE:-rtlsdr}" ]]; then

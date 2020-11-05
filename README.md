@@ -29,8 +29,6 @@ Where the default value is "Unset", `dump978-fa`'s default will be used.
 
 | Variable | Description | Controls which `dump978-fa` option | Default |
 |----------|-------------|--------------------------------|---------|
-| `DUMP978_RAW_PORT` | Listen for connections and provide raw messages on this port. | `--raw-port` | `30978` |
-| `DUMP978_JSON_PORT` | Listen for connections and provide decoded JSON on this port. | `--json-port` | `30979` |
 | `DUMP978_DEVICE_TYPE` | Currently only `rtlsdr` is supported. If you have another type of radio, please open an issue and I'll try to get it added. | `--sdr driver=` | `rtlsdr` |
 | `DUMP978_SDR_AGC` | Set to any value to enable SDR AGC. | `--sdr-auto-gain` | Unset |
 | `DUMP978_SDR_GAIN` | Set SDR gain in dB. | `--sdr-gain` | Unset |
