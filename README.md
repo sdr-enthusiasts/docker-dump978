@@ -1,1 +1,57 @@
+# mikenye/dump978
 
+## Up and Running - `docker run`
+
+```bash
+docker run \
+    -d \
+    --restart=always \
+    -it \
+    --name dump978 \
+    -p 30978:30978 \
+    -p 30979:30979 \
+    -p 37981:37981 \
+    --device /dev/bus/usb:/dev/bus/usb \
+    -e DUMP978_RTLSDR_DEVICE=00000978 \
+    mikenye/dump978
+```
+
+## Environment Variables
+
+### Container Options
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `TZ` | Local timezone in ["TZ database name" format](<https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>). | `UTC` |
+
+### `dump978-fa` General Options
+
+Where the default value is "Unset", `dump978-fa`'s default will be used.
+
+| Variable | Description | Controls which `dump978-fa` option | Default |
+|----------|-------------|--------------------------------|---------|
+| `DUMP978_DEVICE_TYPE` | Currently only `rtlsdr` is supported. If you have another type of radio, please open an issue and I'll try to get it added. | `--sdr driver=` | `rtlsdr` |
+| `DUMP978_SDR_AGC` | Set to any value to enable SDR AGC. | `--sdr-auto-gain` | Unset |
+| `DUMP978_SDR_GAIN` | Set SDR gain in dB. | `--sdr-gain` | Unset |
+| `DUMP978_SDR_PPM` | Set SDR frequency correction in PPM. | `--sdr-ppm` | Unset |
+| `DUMP978_JSON_STDOUT` | Write decoded json to the container log. Useful for troubleshooting, but don't leave enabled! | `--json-stdout` | Unset |
+
+### `dump978-fa` RTL-SDR Options
+
+Use with `DUMP978_DEVICE_TYPE=rtlsdr`.
+
+Where the default value is "Unset", `dump978-fa`'s default will be used.
+
+| Variable | Description | Controls which `dump978-fa` option | Default |
+|----------|-------------|--------------------------------|---------|
+| `DUMP978_RTLSDR_DEVICE` | If using Select device by serial number. | `--sdr driver=rtlsdr,serial=` | Unset |
+
+## Ports
+
+The container listens on the following TCP ports:
+
+| Port | Description |
+|------|-------------|
+| `30978` | Raw UAT output (NOT compatible with `readsb`'s `raw_in`!) |
+| `30979` | Decoded JSON output |
+| `37981` | `uat2esnt` converted output. This IS compatible with `readsb`'s `raw_in`. |

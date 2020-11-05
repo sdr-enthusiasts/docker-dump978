@@ -1,45 +1,48 @@
-#!/usr/bin/env sh
-#shellcheck shell=sh
-
-set -x
+#!/usr/bin/env bash
+#shellcheck shell=bash
 
 REPO=mikenye
 IMAGE=dump978
-PLATFORMS="linux/amd64,linux/arm/v7,linux/arm64"
+PLATFORMS="linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64"
+LATEST_TAG=alpha
 
 docker context use x86_64
 export DOCKER_CLI_EXPERIMENTAL="enabled"
 docker buildx use homecluster
 
-# Get previous versions
-docker pull "${REPO}/${IMAGE}:latest"
-docker run --rm --entrypoint cat "${REPO}/${IMAGE}:latest" /VERSIONS > "/tmp/${IMAGE}.oldlatest.VERSIONS"
-
 # Build & push latest
-docker buildx build --no-cache -t "${REPO}/${IMAGE}:latest" --compress --push --platform "${PLATFORMS}" .
+EXITCODE=1
+FIRSTRUN=1
+TRIES=1
+while [[ "$EXITCODE" -ne 0 ]]; do
+    echo "Attempting build, try $TRIES"
+    if [[ "$FIRSTRUN" -eq 1 ]]; then
+        docker buildx build --no-cache -t "${REPO}/${IMAGE}:${LATEST_TAG}" --compress --push --platform "${PLATFORMS}" .
+        EXITCODE="$?"
+        FIRSTRUN=0
+    else
+        docker buildx build -t "${REPO}/${IMAGE}:${LATEST_TAG}" --compress --push --platform "${PLATFORMS}" .
+        EXITCODE="$?"
+    fi
+    TRIES=$((TRIES+1))
+    if [[ "$TRIES" -ge 5 ]]; then
+        exit 1
+    fi
+done
 
-# Get new versions
-docker pull "${REPO}/${IMAGE}:latest"
-docker run --rm --entrypoint cat "${REPO}/${IMAGE}:latest" > /VERSIONS "/tmp/${IMAGE}.newlatest.VERSIONS"
+# # Get readsb version from latest
+# docker pull "${REPO}/${IMAGE}:${LATEST_TAG}"
+# VERSION=$(docker run --rm --entrypoint readsb "${REPO}/${IMAGE}:${LATEST_TAG}" --version | cut -d " " -f 2)
 
-# Check for version differences
-diff "/tmp/${IMAGE}.oldlatest.VERSIONS" "/tmp/${IMAGE}.newlatest.VERSIONS" > /dev/null
-DIFFEXITCODE=$?
+# # Build & push version-specific
+# docker buildx build -t "${REPO}/${IMAGE}:${VERSION}" --compress --push --platform "${PLATFORMS}" .
 
-if [ -z "$FORCEPUSH" ]; then
-    DIFFEXITCODE=1
-fi
+# # BUILD NOHEALTHCHECK VERSION
+# # Modify dockerfile to remove healthcheck
+# sed '/^HEALTHCHECK /d' < Dockerfile > Dockerfile.nohealthcheck
 
-# If there are version differences, build & push with a tag matching the build date
-if [ $DIFFEXITCODE -ne 0 ]; then
-    docker buildx build -t "${REPO}/${IMAGE}:$(date -I)" --compress --push --platform "${PLATFORMS}" .
-else
-  if [ -z "$FORCEPUSH" ]; then
-    echo "No version changes, not building/pushing."
-    echo "To override, set FORCEPUSH=1."
-    echo ""
-  fi
-fi
+# # Build & push latest
+# docker buildx build -f Dockerfile.nohealthcheck -t "${REPO}/${IMAGE}:${LATEST_TAG}_nohealthcheck" --compress --push --platform "${PLATFORMS}" .
 
-# Clean up
-rm "/tmp/${IMAGE}.oldlatest.VERSIONS" "/tmp/${IMAGE}.newlatest.VERSIONS"
+# # If there are version differences, build & push with a tag matching the build date
+# docker buildx build -f Dockerfile.nohealthcheck -t "${REPO}/${IMAGE}:${VERSION}_nohealthcheck" --compress --push --platform "${PLATFORMS}" .
