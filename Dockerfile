@@ -48,7 +48,7 @@ RUN set -x && \
     echo "rtl-sdr ${BRANCH_RTLSDR}" >> /VERSIONS && \
     mkdir -p "/src/rtl-sdr/build" && \
     pushd "/src/rtl-sdr/build" && \
-    cmake ../ -DINSTALL_UDEV_RULES=ON -Wno-dev && \
+    cmake ../ -DINSTALL_UDEV_RULES=ON -Wno-dev -DCMAKE_BUILD_TYPE=Release && \
     make -Wstringop-truncation && \
     make -Wstringop-truncation install && \
     cp -v "/src/rtl-sdr/rtl-sdr.rules" "/etc/udev/rules.d/" && \
@@ -61,7 +61,7 @@ RUN set -x && \
     git checkout "${BRANCH_SOAPYSDR}" && \
     mkdir -p "/src/SoapySDR/build" && \
     pushd "/src/SoapySDR/build" && \
-    cmake ../ && \
+    cmake ../ -DCMAKE_BUILD_TYPE=Release && \
     make && \
     make test && \
     make install && \
