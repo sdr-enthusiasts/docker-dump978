@@ -89,13 +89,15 @@ RUN set -x && \
     cp -v faup978 "/usr/lib/piaware/helpers/" && \
     mkdir -p "/usr/share/dump978-fa/html" && \
     cp -a "/src/dump978/skyaware/"* "/usr/share/dump978-fa/html/" && \
-    dump978-fa --version >> /VERSIONS && \
+    dump978-fa --version >> /VERSIONS || true && \
     popd && \
     # Clean up
     apt-get remove -y ${TEMP_PACKAGES[@]} && \
     apt-get autoremove -y && \
     # rm -rf /src/* /tmp/* /var/lib/apt/lists/* && \
-    # Test
-    dump978-fa --version && \
     # Print versions
     cat /VERSIONS
+
+# TODO
+#  - add s6-overlay & scripts
+#  - work out a way to test - maybe capture some output and parse it?
