@@ -1,11 +1,12 @@
 FROM debian:stable-slim
 
-ENV URL_REPO_DUMP978="https://github.com/flightaware/dump978.git" \
+ENV BRANCH_RTLSDR="ed0317e6a58c098874ac58b769cf2e609c18d9a5" \
+    S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
+    URL_REPO_DUMP978="https://github.com/flightaware/dump978.git" \
     URL_REPO_LIBUSB="https://github.com/libusb/libusb.git" \
     URL_REPO_RTLSDR="git://git.osmocom.org/rtl-sdr" \
     URL_REPO_SOAPYRTLSDR="https://github.com/pothosware/SoapyRTLSDR.git" \
-    URL_REPO_SOAPYSDR="https://github.com/pothosware/SoapySDR.git" \
-    BRANCH_RTLSDR="ed0317e6a58c098874ac58b769cf2e609c18d9a5"
+    URL_REPO_SOAPYSDR="https://github.com/pothosware/SoapySDR.git"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -104,6 +105,11 @@ RUN set -x && \
     # Print versions
     cat /VERSIONS
 
+# Copy config files
+COPY rootfs/ /
+
+# Set s6 init as entrypoint
+ENTRYPOINT [ "/init" ]
+
 # TODO
-#  - add s6-overlay & scripts
 #  - work out a way to test - maybe capture some output and parse it?
