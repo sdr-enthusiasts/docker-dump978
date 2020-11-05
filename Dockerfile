@@ -3,6 +3,7 @@ FROM debian:stable-slim
 ENV URL_REPO_DUMP978="https://github.com/flightaware/dump978.git" \
     URL_REPO_LIBUSB="https://github.com/libusb/libusb.git" \
     URL_REPO_RTLSDR="git://git.osmocom.org/rtl-sdr" \
+    URL_REPO_SOAPYRTLSDR="https://github.com/pothosware/SoapyRTLSDR.git" \
     URL_REPO_SOAPYSDR="https://github.com/pothosware/SoapySDR.git" \
     BRANCH_RTLSDR="ed0317e6a58c098874ac58b769cf2e609c18d9a5"
 
@@ -17,6 +18,9 @@ RUN set -x && \
     TEMP_PACKAGES+=(cmake) && \
     TEMP_PACKAGES+=(curl) && \
     TEMP_PACKAGES+=(git) && \
+    # s6-overlay dependencies
+    TEMP_PACKAGES+=(gnupg2) && \
+    TEMP_PACKAGES+=(file) && \
     # libusb (for rtl-sdr, SoapySDR)
     TEMP_PACKAGES+=(libusb-1.0-0-dev) && \
     KEPT_PACKAGES+=(libusb-1.0-0) && \
@@ -67,6 +71,14 @@ RUN set -x && \
     make install && \
     ldconfig && \
     echo "SoapySDR $(SoapySDRUtil --info | grep -i 'lib version:' | cut -d ':' -f 2 | tr -d ' ')" >> /VERSIONS && \
+    # Build & install SoapyRTLSDR
+    git clone "${URL_REPO_SOAPYRTLSDR}" "/src/SoapyRTLSDR" && \
+    pushd "/src/SoapyRTLSDR" && \
+    BRANCH_SOAPYRTLSDR=$(git tag --sort="-creatordate" | head -1) && \
+    git checkout "${BRANCH_SOAPYRTLSDR}" && \
+
+
+
     popd && popd && \
     # Build & install dump978
     git clone "${URL_REPO_DUMP978}" "/src/dump978" && \
