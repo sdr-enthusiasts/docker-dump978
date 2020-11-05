@@ -43,8 +43,9 @@ RUN set -x && \
     git clone "${URL_REPO_LIBUSB}" "/src/libusb" && \
     pushd "/src/libusb" && \
     BRANCH_LIBUSB=$(git tag --sort="-creatordate" | grep -vP '\-rc[0-9]+$' | grep -P '^v.*' | head -1) && \
+    echo "libusb $BRANCH_LIBUSB" >> /VERSIONS && \
     git checkout "${BRANCH_LIBUSB}" && \
-    ./autogen && \
+    ./autogen.sh && \
     make && \
     make install && \
     ldconfig && \
