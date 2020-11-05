@@ -27,10 +27,14 @@ RUN set -x && \
     TEMP_PACKAGES+=(pkg-config) && \
     # dump978 dependencies
     TEMP_PACKAGES+=(libboost-dev) && \
-    TEMP_PACKAGES+=(libboost-system-dev) && \
-    TEMP_PACKAGES+=(libboost-program-options-dev) && \
-    TEMP_PACKAGES+=(libboost-regex-dev) && \
-    TEMP_PACKAGES+=(libboost-filesystem-dev) && \
+    TEMP_PACKAGES+=(libboost-system1.67-dev) && \
+    KEPT_PACKAGES+=(libboost-system1.67.0) && \
+    TEMP_PACKAGES+=(libboost-program-options1.67-dev) && \
+    KEPT_PACKAGES+=(libboost-program-options1.67.0) && \
+    TEMP_PACKAGES+=(libboost-regex1.67.0-dev) && \
+    KEPT_PACKAGES+=(libboost-regex1.67.0) && \
+    TEMP_PACKAGES+=(libboost-filesystem1.67.0-dev) && \
+    KEPT_PACKAGES+=(libboost-filesystem1.67.0) && \
     # Install packages.
     apt-get update && \
     apt-get install -y --no-install-recommends \
