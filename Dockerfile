@@ -91,6 +91,8 @@ RUN set -x && \
     cp -a "/src/dump978/skyaware/"* "/usr/share/dump978-fa/html/" && \
     dump978-fa --version >> /VERSIONS || true && \
     popd && \
+    # Deploy s6-overlay.
+    curl -s https://raw.githubusercontent.com/mikenye/deploy-s6-overlay/master/deploy-s6-overlay.sh | sh && \
     # Clean up
     apt-get remove -y ${TEMP_PACKAGES[@]} && \
     apt-get autoremove -y && \
