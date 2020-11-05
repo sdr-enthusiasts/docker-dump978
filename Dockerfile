@@ -6,7 +6,8 @@ ENV BRANCH_RTLSDR="ed0317e6a58c098874ac58b769cf2e609c18d9a5" \
     URL_REPO_LIBUSB="https://github.com/libusb/libusb.git" \
     URL_REPO_RTLSDR="git://git.osmocom.org/rtl-sdr" \
     URL_REPO_SOAPYRTLSDR="https://github.com/pothosware/SoapyRTLSDR.git" \
-    URL_REPO_SOAPYSDR="https://github.com/pothosware/SoapySDR.git"
+    URL_REPO_SOAPYSDR="https://github.com/pothosware/SoapySDR.git" \
+    URL_REPO_UAT2ESNT="https://github.com/adsbxchange/uat2esnt.git"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -39,6 +40,8 @@ RUN set -x && \
     KEPT_PACKAGES+=(libboost-regex1.67.0) && \
     TEMP_PACKAGES+=(libboost-filesystem1.67-dev) && \
     KEPT_PACKAGES+=(libboost-filesystem1.67.0) && \
+    # uat2esnt dependencies
+    KEPT_PACKAGES+=(socat) && \
     # Install packages.
     apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -97,6 +100,15 @@ RUN set -x && \
     cp -v faup978 "/usr/lib/piaware/helpers/" && \
     mkdir -p "/usr/share/dump978-fa/html" && \
     cp -a "/src/dump978/skyaware/"* "/usr/share/dump978-fa/html/" && \
+    popd && \
+    # Build & install uat2esnt
+    git clone "${URL_REPO_UAT2ESNT}" "/src/uat2esnt" && \
+    pushd "/src/uat2esnt" && \
+    make all test && \
+    cp -v ./uat2text /usr/local/bin/ && \
+    cp -v ./uat2esnt /usr/local/bin/ && \
+    cp -v ./uat2json /usr/local/bin/ && \
+    cp -v ./extract_nexrad /usr/local/bin/ && \
     popd && \
     # Deploy s6-overlay.
     curl -s https://raw.githubusercontent.com/mikenye/deploy-s6-overlay/master/deploy-s6-overlay.sh | sh && \
