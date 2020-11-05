@@ -17,13 +17,7 @@ RUN set -x && \
     TEMP_PACKAGES+=(cmake) && \
     TEMP_PACKAGES+=(curl) && \
     TEMP_PACKAGES+=(git) && \
-    # # libusb dependencies
-    # TEMP_PACKAGES+=(autoconf) && \
-    # TEMP_PACKAGES+=(automake) && \
-    # TEMP_PACKAGES+=(libtool) && \
-    # TEMP_PACKAGES+=(libudev-dev) && \
-    # KEPT_PACKAGES+=(libudev1) && \
-    # libusb
+    # libusb (for rtl-sdr, SoapySDR)
     TEMP_PACKAGES+=(libusb-1.0-0-dev) && \
     KEPT_PACKAGES+=(libusb-1.0-0) && \
     # rtl-sdr dependencies
@@ -45,17 +39,6 @@ RUN set -x && \
         ${TEMP_PACKAGES[@]} \
         && \
     git config --global advice.detachedHead false && \
-    # # Build & install libusb
-    # git clone "${URL_REPO_LIBUSB}" "/src/libusb" && \
-    # pushd "/src/libusb" && \
-    # BRANCH_LIBUSB=$(git tag --sort="-creatordate" | grep -vP '\-rc[0-9]+$' | grep -P '^v.*' | head -1) && \
-    # echo "libusb $BRANCH_LIBUSB" >> /VERSIONS && \
-    # git checkout "${BRANCH_LIBUSB}" && \
-    # ./autogen.sh && \
-    # make && \
-    # make install && \
-    # ldconfig && \
-    # popd && \
     # Build & install rtl-sdr
     git clone "${URL_REPO_RTLSDR}" "/src/rtl-sdr" && \
     pushd "/src/rtl-sdr" && \
