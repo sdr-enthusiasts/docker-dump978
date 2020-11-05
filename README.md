@@ -10,6 +10,7 @@ docker run \
     --name dump978 \
     -p 30978:30978 \
     -p 30979:30979 \
+    -p 37981:37981 \
     --device /dev/bus/usb:/dev/bus/usb \
     -e DUMP978_RTLSDR_DEVICE=00000978 \
     mikenye/dump978
@@ -44,3 +45,13 @@ Where the default value is "Unset", `dump978-fa`'s default will be used.
 | Variable | Description | Controls which `dump978-fa` option | Default |
 |----------|-------------|--------------------------------|---------|
 | `DUMP978_RTLSDR_DEVICE` | If using Select device by serial number. | `--sdr driver=rtlsdr,serial=` | Unset |
+
+## Ports
+
+The container listens on the following TCP ports:
+
+| Port | Description |
+|------|-------------|
+| `30978` | Raw UAT output (NOT compatible with `readsb`'s `raw_in`!) |
+| `30979` | Decoded JSON output |
+| `37981` | `uat2esnt` converted output. This IS compatible with `readsb`'s `raw_in`. |
