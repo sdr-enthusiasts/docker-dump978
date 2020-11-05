@@ -2,7 +2,7 @@
 #shellcheck shell=bash
 
 # Set readsb binary
-DUMP978_BIN="/usr/local/bin/readsb"
+DUMP978_BIN="/usr/local/bin/dump978-fa"
 
 # Listen on 0.0.0.0:DUMP978_RAW_PORT for raw messages
 DUMP978_CMD=("--raw-port 0.0.0.0:${DUMP978_RAW_PORT:-30978}")
