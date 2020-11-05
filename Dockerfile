@@ -125,5 +125,8 @@ COPY rootfs/ /
 # Set s6 init as entrypoint
 ENTRYPOINT [ "/init" ]
 
+# Expose ports
+EXPOSE 30978/tcp 30979/tcp 37981/tcp
+
 # TODO
 #  - work out a way to test - maybe capture some output and parse it?
