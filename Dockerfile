@@ -76,6 +76,7 @@ RUN set -x && \
     make install && \
     ldconfig && \
     echo "SoapySDR $(SoapySDRUtil --info | grep -i 'lib version:' | cut -d ':' -f 2 | tr -d ' ')" >> /VERSIONS && \
+    popd && popd && \
     # Build & install SoapyRTLSDR
     git clone "${URL_REPO_SOAPYRTLSDR}" "/src/SoapyRTLSDR" && \
     pushd "/src/SoapyRTLSDR" && \
