@@ -32,7 +32,7 @@ done
 
 # Get readsb version from latest
 docker pull "${REPO}/${IMAGE}:${LATEST_TAG}"
-VERSION=$(docker run --rm --entrypoint dump978-fa "${REPO}/${IMAGE}:${LATEST_TAG}" --version | head -1 | tr -s " " | cut -d ' ' -f 2)
+VERSION=$(docker run --rm --entrypoint dump978-fa "${REPO}/${IMAGE}:${LATEST_TAG}" --version 2>&1 | head -1 | tr -s " " | cut -d ' ' -f 2)
 
 # Build & push version-specific
 docker buildx build -t "${REPO}/${IMAGE}:${VERSION}" --compress --push --platform "${PLATFORMS}" .
