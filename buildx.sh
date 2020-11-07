@@ -4,7 +4,7 @@
 REPO=mikenye
 IMAGE=dump978
 PLATFORMS="linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64"
-LATEST_TAG=alpha
+LATEST_TAG=latest
 
 docker context use x86_64
 export DOCKER_CLI_EXPERIMENTAL="enabled"
@@ -30,12 +30,12 @@ while [[ "$EXITCODE" -ne 0 ]]; do
     fi
 done
 
-# # Get readsb version from latest
-# docker pull "${REPO}/${IMAGE}:${LATEST_TAG}"
-# VERSION=$(docker run --rm --entrypoint readsb "${REPO}/${IMAGE}:${LATEST_TAG}" --version | cut -d " " -f 2)
+# Get readsb version from latest
+docker pull "${REPO}/${IMAGE}:${LATEST_TAG}"
+VERSION=$(docker run --rm --entrypoint dump978-fa "${REPO}/${IMAGE}:${LATEST_TAG}" --version | head -1 | tr -s " " | cut -d ' ' -f 2)
 
-# # Build & push version-specific
-# docker buildx build -t "${REPO}/${IMAGE}:${VERSION}" --compress --push --platform "${PLATFORMS}" .
+# Build & push version-specific
+docker buildx build -t "${REPO}/${IMAGE}:${VERSION}" --compress --push --platform "${PLATFORMS}" .
 
 # # BUILD NOHEALTHCHECK VERSION
 # # Modify dockerfile to remove healthcheck

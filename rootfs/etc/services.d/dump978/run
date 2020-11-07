@@ -10,6 +10,8 @@ DUMP978_CMD=("--raw-port" "0.0.0.0:30978")
 # Listen on 0.0.0.0:DUMP978_JSON_PORT for json messages
 DUMP978_CMD+=("--json-port" "0.0.0.0:30979")
 
+DUMP978_CMD+=("--format" "CS8")
+
 # Handle "--sdr"
 if [[ -n "${DUMP978_DEVICE_TYPE:-rtlsdr}" ]]; then
     case "${DUMP978_DEVICE_TYPE:-rtlsdr}" in
@@ -43,6 +45,7 @@ if [[ -n "$DUMP978_SDR_PPM" ]]; then
     DUMP978_CMD+=("--sdr-ppm" "$DUMP978_SDR_PPM")
 fi
 
+# Handle "--json-stdout"
 if [[ -n "$DUMP978_JSON_STDOUT" ]]; then
     DUMP978_CMD+=("--json-stdout")
 fi

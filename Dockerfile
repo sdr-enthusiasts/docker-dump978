@@ -3,7 +3,6 @@ FROM debian:stable-slim
 ENV BRANCH_RTLSDR="ed0317e6a58c098874ac58b769cf2e609c18d9a5" \
     S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
     URL_REPO_DUMP978="https://github.com/flightaware/dump978.git" \
-    URL_REPO_LIBUSB="https://github.com/libusb/libusb.git" \
     URL_REPO_RTLSDR="git://git.osmocom.org/rtl-sdr" \
     URL_REPO_SOAPYRTLSDR="https://github.com/pothosware/SoapyRTLSDR.git" \
     URL_REPO_SOAPYSDR="https://github.com/pothosware/SoapySDR.git" \
@@ -77,6 +76,7 @@ RUN set -x && \
     make install && \
     ldconfig && \
     echo "SoapySDR $(SoapySDRUtil --info | grep -i 'lib version:' | cut -d ':' -f 2 | tr -d ' ')" >> /VERSIONS && \
+    popd && popd && \
     # Build & install SoapyRTLSDR
     git clone "${URL_REPO_SOAPYRTLSDR}" "/src/SoapyRTLSDR" && \
     pushd "/src/SoapyRTLSDR" && \
