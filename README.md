@@ -179,4 +179,4 @@ I also have a [Discord channel](https://discord.gg/sTf9uYF), feel free to [join]
 
 ## Changelog
 
-See the project's [commit history](https://github.com/mikenye/docker-dump978/commits/main).
+See the project's [commit history](https://github.com/mikenye/docker-dump978/commits/master).
