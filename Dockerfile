@@ -115,7 +115,7 @@ RUN set -x && \
     # Clean up
     apt-get remove -y ${TEMP_PACKAGES[@]} && \
     apt-get autoremove -y && \
-    # rm -rf /src/* /tmp/* /var/lib/apt/lists/* && \
+    rm -rf /src/* /tmp/* /var/lib/apt/lists/* && \
     # Print versions
     cat /VERSIONS
 
