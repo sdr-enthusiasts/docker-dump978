@@ -1,0 +1,107 @@
+#!/usr/bin/with-contenv bash
+#shellcheck shell=bash
+
+if [[ -n "$INFLUXDBURL" ]]; then
+
+
+  # Initialise config files, and remove existing
+  OUTPUT_INFLUXDB_CONFIG_FILE="/etc/telegraf/telegraf.d/outputs_influxdb.conf"
+  rm "$OUTPUT_INFLUXDB_CONFIG_FILE" > /dev/null 2>&1 || true
+  INPUT_JSON_CONFIG_FILE="/etc/telegraf/telegraf.d/inputs_socket_listener_dump978_json.conf"
+  rm "$INPUT_JSON_CONFIG_FILE" > /dev/null 2>&1 || true
+
+  ##### TELEGRAF CONFIG - OUTPUT TO INFLUXDB #####
+  {
+    echo "[[outputs.influxdb]]"
+
+    # Add InfluxDB URL
+    echo " urls = [\"${INFLUXDBURL}\"]"
+
+    # Finish config
+    echo 'database = "dump978"'
+    echo 'skip_database_creation = false'
+    echo 'timeout = "5s"'
+
+    # If set, add InfluxDB username
+    if [[ -n "${INFLUXDBUSERNAME+x}" ]]; then
+      echo "username = \"${INFLUXDBUSERNAME}\""
+    fi
+
+    # If set, add InfluxDB password
+    if [[ -n "${INFLUXDBPASSWORD+x}" ]]; then
+      echo "password = \"${INFLUXDBPASSWORD}\""
+    fi
+
+  } > "$OUTPUT_INFLUXDB_CONFIG_FILE"
+
+
+  ##### TELEGRAF CONFIG - INPUT FROM dump978 JSON #####
+  # Build telegraf config - input from dump978 VRS JSON
+  {
+    echo "[[inputs.socket_listener]]"
+
+    # Run every fairly often as VRS JSON comes out fast
+    echo "interval = \"1s\""
+    
+    ## URL to listen on
+    echo "service_address = \"tcp://127.0.0.1:33979\""
+
+    ## Maximum number of concurrent connections.
+    ## Only applies to stream sockets (e.g. TCP).
+    ## 0 (default) is unlimited.
+    echo "max_connections = 2"
+
+    ## Read timeout.
+    ## Only applies to stream sockets (e.g. TCP).
+    ## 0 (default) is unlimited.
+    echo "read_timeout = \"0\""
+
+    ## Period between keep alive probes.
+    ## Only applies to TCP sockets.
+    ## 0 disables keep alive probes.
+    ## Defaults to the OS configuration.
+    echo "keep_alive_period = \"1m\""
+
+    ## Content encoding for message payloads, can be set to "gzip" to or
+    ## "identity" to apply no encoding.
+    echo "content_encoding = \"identity\""
+
+    ## Data format to consume.
+    ## Each data format has its own unique set of configuration options, read
+    ## more about them here:
+    ## https://github.com/influxdata/telegraf/blob/master/docs/DATA_FORMATS_INPUT.md
+    echo "data_format = \"json\""
+
+    echo "json_strict = true"
+
+    ## Tag keys is an array of keys that should be added as tags.
+    echo "tag_keys = ["
+    echo "  \"address\","
+    echo "  \"address_qualifier\","
+    echo "  \"airground_state\","
+    echo "  \"utc_coupled\","
+    echo "]"
+
+    ## String fields is an array of keys that should be added as string fields.
+    echo "json_string_fields = ["
+    echo "  \"address\","
+    echo "  \"address_qualifier\","
+    echo "  \"airground_state\","
+    echo "  \"utc_coupled\","
+    echo "]"
+
+    ## Name override
+    echo "name_override = \"aircraft\""
+
+    ## Time key is the key containing the time that should be used to create the
+    ## metric.
+    echo "json_time_key = \"metadata_received_at\""
+
+    ## Time format is the time layout that should be used to interprete the
+    ## json_time_key.  The time must be `unix`, `unix_ms` or a time in the
+    ## "reference time".
+    echo "json_time_format =\"unix\""
+
+  } > "$INPUT_JSON_CONFIG_FILE"
+
+fi

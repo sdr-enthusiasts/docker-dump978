@@ -39,7 +39,7 @@ RUN set -x && \
     KEPT_PACKAGES+=(libboost-regex1.67.0) && \
     TEMP_PACKAGES+=(libboost-filesystem1.67-dev) && \
     KEPT_PACKAGES+=(libboost-filesystem1.67.0) && \
-    # uat2esnt dependencies
+    # uat2esnt dependencies (+ telegraf)
     KEPT_PACKAGES+=(socat) && \
     # telegraf dependencies
     TEMP_PACKAGES+=(apt-transport-https) && \
