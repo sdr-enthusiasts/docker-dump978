@@ -41,6 +41,8 @@ RUN set -x && \
     KEPT_PACKAGES+=(libboost-filesystem1.67.0) && \
     # uat2esnt dependencies
     KEPT_PACKAGES+=(socat) && \
+    # telegraf dependencies
+    TEMP_PACKAGES+=(apt-transport-https) && \
     # Install packages.
     apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -110,6 +112,12 @@ RUN set -x && \
     cp -v ./uat2json /usr/local/bin/ && \
     cp -v ./extract_nexrad /usr/local/bin/ && \
     popd && \
+    # Install telegraf
+    curl --location --silent -o - https://repos.influxdata.com/influxdb.key | apt-key add - && \
+    source /etc/os-release && \ 
+    echo "deb https://repos.influxdata.com/debian $VERSION_CODENAME stable" > /etc/apt/sources.list.d/influxdb.list && \
+    apt-get update && \
+    apt-get install --no-install-recommends -y telegraf && \
     # Deploy s6-overlay.
     curl -s https://raw.githubusercontent.com/mikenye/deploy-s6-overlay/master/deploy-s6-overlay.sh | sh && \
     # Clean up
