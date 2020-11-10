@@ -4,6 +4,8 @@ This container provides the FlightAware 978MHz UAT decoder, and the ADSBExchange
 
 This container can be used alongside [mikenye/readsb-protobuf](https://github.com/mikenye/docker-readsb-protobuf) to provide UAT into several feeders.
 
+This container also contains InfluxData's [Telegraf](https://docs.influxdata.com/telegraf/), and can send flight data and `dump978` metrics to InfluxDB (if wanted - not started by default).
+
 UAT is currently only used in the USA, so don't bother with this if you're not located in the USA.
 
 ## Ports
@@ -166,6 +168,18 @@ Where the default value is "Unset", `dump978-fa`'s default will be used.
 | Variable | Description | Controls which `dump978-fa` option | Default |
 |----------|-------------|--------------------------------|---------|
 | `DUMP978_RTLSDR_DEVICE` | If using Select device by serial number. | `--sdr driver=rtlsdr,serial=` | Unset |
+
+### InfluxDB Options
+
+These variables control the sending of flight data and readsb metrics to [InfluxDB](https://docs.influxdata.com/influxdb/) (via a built-in instance of [Telegraf](https://docs.influxdata.com/telegraf/)).
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `INFLUXDBURL` | The full HTTP URL for your InfluxDB instance. | Unset |
+| `INFLUXDBUSERNAME` | If using authentication, a username for your InfluxDB instance. If not using authentication, leave unset. | Unset |
+| `INFLUXDBPASSWORD` | If using authentication, a password for your InfluxDB instance. If not using authentication, leave unset. | Unset |
+
+If `INFLUXDBURL` is left unset, the built-in instance of Telegraf will not be started.
 
 ## Logging
 
