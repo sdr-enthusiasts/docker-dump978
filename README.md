@@ -171,7 +171,7 @@ Where the default value is "Unset", `dump978-fa`'s default will be used.
 
 ### InfluxDB Options
 
-These variables control the sending of flight data and readsb metrics to [InfluxDB](https://docs.influxdata.com/influxdb/) (via a built-in instance of [Telegraf](https://docs.influxdata.com/telegraf/)).
+These variables control the sending of flight data and dump978 metrics to [InfluxDB](https://docs.influxdata.com/influxdb/) (via a built-in instance of [Telegraf](https://docs.influxdata.com/telegraf/)).
 
 | Variable | Description | Default |
 |----------|-------------|---------|
