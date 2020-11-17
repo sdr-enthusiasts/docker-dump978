@@ -111,6 +111,7 @@ RUN set -x && \
     cp -v ./uat2esnt /usr/local/bin/ && \
     cp -v ./uat2json /usr/local/bin/ && \
     cp -v ./extract_nexrad /usr/local/bin/ && \
+    mkdir -p /run/uat2json && \
     popd && \
     # Install telegraf
     curl --location --silent -o - https://repos.influxdata.com/influxdb.key | apt-key add - && \
