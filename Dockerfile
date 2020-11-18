@@ -140,5 +140,9 @@ ENTRYPOINT [ "/init" ]
 # Expose ports
 EXPOSE 30978/tcp 30979/tcp 37981/tcp
 
+# Add healthcheck - very long start period & interval due to relatively small number of UAT aircraft
+# May decrease interval & start-period in future
+HEALTHCHECK --start-period=7200s --interval=3600s CMD /scripts/healthcheck.sh
+
 # TODO
 #  - work out a way to test - maybe capture some output and parse it?
