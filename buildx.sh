@@ -37,12 +37,12 @@ VERSION=$(docker run --rm --entrypoint dump978-fa "${REPO}/${IMAGE}:${LATEST_TAG
 # Build & push version-specific
 docker buildx build -t "${REPO}/${IMAGE}:${VERSION}" --compress --push --platform "${PLATFORMS}" .
 
-# # BUILD NOHEALTHCHECK VERSION
-# # Modify dockerfile to remove healthcheck
-# sed '/^HEALTHCHECK /d' < Dockerfile > Dockerfile.nohealthcheck
+# BUILD NOHEALTHCHECK VERSION
+# Modify dockerfile to remove healthcheck
+sed '/^HEALTHCHECK /d' < Dockerfile > Dockerfile.nohealthcheck
 
 # # Build & push latest
-# docker buildx build -f Dockerfile.nohealthcheck -t "${REPO}/${IMAGE}:${LATEST_TAG}_nohealthcheck" --compress --push --platform "${PLATFORMS}" .
+docker buildx build -f Dockerfile.nohealthcheck -t "${REPO}/${IMAGE}:${LATEST_TAG}_nohealthcheck" --compress --push --platform "${PLATFORMS}" .
 
 # # If there are version differences, build & push with a tag matching the build date
-# docker buildx build -f Dockerfile.nohealthcheck -t "${REPO}/${IMAGE}:${VERSION}_nohealthcheck" --compress --push --platform "${PLATFORMS}" .
+docker buildx build -f Dockerfile.nohealthcheck -t "${REPO}/${IMAGE}:${VERSION}_nohealthcheck" --compress --push --platform "${PLATFORMS}" .
