@@ -30,7 +30,7 @@ while [[ "$EXITCODE" -ne 0 ]]; do
     fi
 done
 
-# Get readsb version from latest
+# Get dump978-fa version from latest
 docker pull "${REPO}/${IMAGE}:${LATEST_TAG}"
 VERSION=$(docker run --rm --entrypoint dump978-fa "${REPO}/${IMAGE}:${LATEST_TAG}" --version 2>&1 | head -1 | tr -s " " | cut -d ' ' -f 2)
 
