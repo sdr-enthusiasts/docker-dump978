@@ -43,6 +43,9 @@ RUN set -x && \
     KEPT_PACKAGES+=(socat) && \
     # telegraf dependencies
     TEMP_PACKAGES+=(apt-transport-https) && \
+    # healthcheck dependencies
+    KEPT_PACKAGES+=(net-tools) && \
+    KEPT_PACKAGES+=(jq) && \
     # Install packages.
     apt-get update && \
     apt-get install -y --no-install-recommends \
