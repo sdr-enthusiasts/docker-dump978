@@ -1,0 +1,19 @@
+#!/usr/bin/with-contenv bash
+#shellcheck shell=bash
+
+# Rotate historical aircraft.json files every minute
+sleep 60
+
+# Set the maximum number of files (120 = 2 hours)
+MAX_FILES=120
+
+# Rotate older files
+for ((i = $MAX_FILES ; i > 0 ; i--)); do
+    mv -v "/run/uat2json/aircraft.json.$((i-1))" "/run/uat2json/aircraft.json.$i" > /dev/null 2>&1
+done
+
+# Delete oldest file
+rm "/run/uat2json/aircraft.json.$MAX_FILES" > /dev/null 2>&1
+
+# Rotate most recent
+cp -v "/run/uat2json/aircraft.json" "/run/uat2json/aircraft.json.0" > /dev/null 2>&1
