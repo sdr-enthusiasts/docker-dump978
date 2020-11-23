@@ -8,7 +8,7 @@ sleep 60
 MAX_FILES=120
 
 # Rotate older files
-for ((i = $MAX_FILES ; i > 0 ; i--)); do
+for ((i = MAX_FILES ; i > 0 ; i--)); do
     mv -v "/run/uat2json/aircraft.json.$((i-1))" "/run/uat2json/aircraft.json.$i" > /dev/null 2>&1
 done
 

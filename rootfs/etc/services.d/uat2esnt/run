@@ -5,6 +5,7 @@ set -eo pipefail
 
 sleep 5
 
+# shellcheck disable=SC2016
 socat -u "TCP:127.0.0.1:30978" STDOUT | \
 uat2esnt | \
 socat -d -d -u STDIN "TCP-LISTEN:37981,fork" \
