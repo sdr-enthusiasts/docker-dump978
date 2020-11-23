@@ -134,7 +134,7 @@ services:
       - FEEDER_ID=YOURFEEDERID
       - BEASTHOST=readsb
       - UAT_RECEIVER_TYPE=relay
-      - UAT_RECEIVER_HOST=dump978  
+      - UAT_RECEIVER_HOST=dump978
 ```
 
 You should now be feeding ADSB-ES & UAT to ADSBExchange and FlightAware.
