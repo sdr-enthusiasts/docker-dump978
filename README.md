@@ -56,7 +56,7 @@ volumes:
 
 services:
   readsb:
-    image: mikenye/readsb-protobuf:beta
+    image: mikenye/readsb-protobuf
     tty: true
     container_name: readsb
     restart: always
