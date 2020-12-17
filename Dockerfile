@@ -10,6 +10,9 @@ ENV BRANCH_RTLSDR="ed0317e6a58c098874ac58b769cf2e609c18d9a5" \
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
+# Copy config files
+COPY rootfs/ /
+
 RUN set -x && \
     TEMP_PACKAGES=() && \
     KEPT_PACKAGES=() && \
@@ -128,11 +131,10 @@ RUN set -x && \
     apt-get remove -y ${TEMP_PACKAGES[@]} && \
     apt-get autoremove -y && \
     rm -rf /src/* /tmp/* /var/lib/apt/lists/* && \
+    # Write container version 
+    ( dump978-fa --version || true ) 2>&1 | cut -d ' ' -f 2 | tr -d ' ' > /CONTAINER_VERSION && \
     # Print versions
     cat /VERSIONS
-
-# Copy config files
-COPY rootfs/ /
 
 # Set s6 init as entrypoint
 ENTRYPOINT [ "/init" ]
