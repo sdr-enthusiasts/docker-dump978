@@ -23,7 +23,7 @@ jobs:
     env:
       REPO: mikenye
       IMAGE: dump978
-      PUSH: false
+      PUSH: true
     
     steps:
 
@@ -148,7 +148,7 @@ jobs:
     env:
       REPO: mikenye
       IMAGE: dump978
-      PUSH: false
+      PUSH: true
 
     steps:
 
