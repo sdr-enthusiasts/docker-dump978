@@ -132,7 +132,8 @@ RUN set -x && \
     apt-get autoremove -y && \
     rm -rf /src/* /tmp/* /var/lib/apt/lists/* && \
     # Write container version 
-    ( dump978-fa --version || true ) 2>&1 | cut -d ' ' -f 2 | tr -d ' ' > /CONTAINER_VERSION && \
+    ( dump978-fa --version > /VERSIONS 2>&1 || true ) && \
+    grep dump978 /VERSIONS | cut -d ' ' -f2 >> /CONTAINER_VERSION && \
     # Print versions
     cat /VERSIONS && \
     cat /CONTAINER_VERSION
