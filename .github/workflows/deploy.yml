@@ -10,19 +10,9 @@ on:
 
   # Build and deploy the image nightly (to ensure we pick up any security updates)
   schedule:
-    - cron: "0 2 * * *"
+    - cron: "0 5 * * *"
 
 jobs:
-  cancel-duplicate-workflow-runs:
-    name: "Cancel duplicate workflow runs"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: potiuk/cancel-workflow-runs@master
-        name: "Cancel duplicate workflow runs"
-        with:
-          cancelMode: allDuplicates
-          token: ${{ secrets.GITHUB_TOKEN }}
-          sourceRunId: ${{ github.event.workflow_run.id }}
   deploy_dockerhub_multiarch:
     name: Deploy to DockerHub (Multi-Arch)
     runs-on: ubuntu-latest

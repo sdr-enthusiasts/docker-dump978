@@ -134,7 +134,8 @@ RUN set -x && \
     # Write container version 
     ( dump978-fa --version || true ) 2>&1 | cut -d ' ' -f 2 | tr -d ' ' > /CONTAINER_VERSION && \
     # Print versions
-    cat /VERSIONS
+    cat /VERSIONS && \
+    cat /CONTAINER_VERSION
 
 # Set s6 init as entrypoint
 ENTRYPOINT [ "/init" ]
