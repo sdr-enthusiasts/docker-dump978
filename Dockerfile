@@ -100,7 +100,8 @@ RUN set -x && \
     # Build & install dump978
     git clone "${URL_REPO_DUMP978}" "/src/dump978" && \
     pushd "/src/dump978" && \
-    BRANCH_DUMP978=$(git tag --sort="-creatordate" | head -1) && \
+    # BRANCH_DUMP978=$(git tag --sort="-creatordate" | head -1) && \
+    BRANCH_DUMP978="2a5e9a4bb4e8fecfb0c0798794a73efb8252e29e" && \
     git checkout "${BRANCH_DUMP978}" && \
     make all faup978 && \
     mkdir -p "/usr/lib/piaware/helpers" && \
