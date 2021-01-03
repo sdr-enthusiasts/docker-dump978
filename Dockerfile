@@ -112,6 +112,7 @@ RUN set -x && \
     # Build & install uat2esnt
     git clone "${URL_REPO_UAT2ESNT}" "/src/uat2esnt" && \
     pushd "/src/uat2esnt" && \
+    git checkout "1992abdcb409d1c5e23139fd993bb1c81c349abd" && \
     make all test && \
     cp -v ./uat2text /usr/local/bin/ && \
     cp -v ./uat2esnt /usr/local/bin/ && \
