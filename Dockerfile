@@ -100,8 +100,7 @@ RUN set -x && \
     # Build & install dump978
     git clone "${URL_REPO_DUMP978}" "/src/dump978" && \
     pushd "/src/dump978" && \
-    # BRANCH_DUMP978=$(git tag --sort="-creatordate" | head -1) && \
-    BRANCH_DUMP978="2a5e9a4bb4e8fecfb0c0798794a73efb8252e29e" && \
+    BRANCH_DUMP978=$(git tag --sort="-creatordate" | head -1) && \
     git checkout "${BRANCH_DUMP978}" && \
     make all faup978 && \
     mkdir -p "/usr/lib/piaware/helpers" && \
@@ -112,6 +111,7 @@ RUN set -x && \
     popd && \
     # Build & install uat2esnt
     git clone "${URL_REPO_UAT2ESNT}" "/src/uat2esnt" && \
+    git checkout "1992abdcb409d1c5e23139fd993bb1c81c349abd" && \
     pushd "/src/uat2esnt" && \
     make all test && \
     cp -v ./uat2text /usr/local/bin/ && \
