@@ -12,7 +12,7 @@ if [[ -n "$DEBUG_LOGGING" ]]; then
 fi
 
 # Check that if more than one rtlsdr, that we have a serial given
-if [[ "$READSB_DEVICE_TYPE" == "rtlsdr" ]]; then
+if [[ "$DUMP978_DEVICE_TYPE" == "rtlsdr" ]]; then
     # Prepare temp file
     biast_tempfile=$(mktemp)
     # Attempt to get devices
@@ -21,8 +21,8 @@ if [[ "$READSB_DEVICE_TYPE" == "rtlsdr" ]]; then
     num_devices=$(sed -n 's/^Found\s\+\([0-9]\+\)\s\+device(s):\s*$/\1/p' "$biast_tempfile")
     # If we have more than one device, we need a serial number
     if [[ "$num_devices" -gt 1 ]]; then
-        if [[ -z "$READSB_RTLSDR_DEVICE" ]]; then
-            echo -e "${NOCOLOR}ERROR: Multiple RTL-SDR devices present. Please set READSB_RTLSDR_DEVICE!${LIGHTRED}"
+        if [[ -z "$DUMP978_RTLSDR_DEVICE" ]]; then
+            echo -e "${NOCOLOR}ERROR: Multiple RTL-SDR devices present. Please set DUMP978_RTLSDR_DEVICE!${LIGHTRED}"
             EXITCODE=1
         fi
     fi
