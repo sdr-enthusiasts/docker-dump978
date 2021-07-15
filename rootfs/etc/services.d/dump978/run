@@ -30,6 +30,7 @@ if [[ -n "${DUMP978_DEVICE_TYPE:-rtlsdr}" ]]; then
                 sleep 60
                 exit 1
             fi
+        ;;
         *)
             >&2 echo "ERROR: Unsupported DUMP978_DEVICE_TYPE!"
             sleep 60
