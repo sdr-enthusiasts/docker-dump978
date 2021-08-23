@@ -22,6 +22,15 @@ if [[ -n "${DUMP978_DEVICE_TYPE:-rtlsdr}" ]]; then
                 DUMP978_CMD+=("--sdr" "driver=rtlsdr")
             fi
         ;;
+        stratuxv3)
+            if [[ -n "${DUMP978_STRATUXV3_DEVICE}" ]]; then
+                DUMP978_CMD+=("--stratuxv3" "${DUMP978_STRATUXV3_DEVICE}")
+            else
+                >&2 echo "ERROR: Please set DUMP978_STRATUXV3_DEVICE!"
+                sleep 60
+                exit 1
+            fi
+        ;;
         *)
             >&2 echo "ERROR: Unsupported DUMP978_DEVICE_TYPE!"
             sleep 60
