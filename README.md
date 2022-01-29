@@ -66,7 +66,7 @@ services:
     container_name: readsb
     restart: always
     devices:
-      - /dev/bus/usb:/dev/bus/usb/
+      - /dev/bus/usb:/dev/bus/usb
     ports:
       - 8080:8080
       - 30005:30005
