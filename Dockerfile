@@ -6,7 +6,10 @@ ENV BRANCH_RTLSDR="ed0317e6a58c098874ac58b769cf2e609c18d9a5" \
     URL_REPO_RTLSDR="git://git.osmocom.org/rtl-sdr" \
     URL_REPO_SOAPYRTLSDR="https://github.com/pothosware/SoapyRTLSDR.git" \
     URL_REPO_SOAPYSDR="https://github.com/pothosware/SoapySDR.git" \
-    URL_REPO_UAT2ESNT="https://github.com/adsbxchange/uat2esnt.git"
+    URL_REPO_UAT2ESNT="https://github.com/adsbxchange/uat2esnt.git" \
+    ###########################################################################
+    PROMETHEUSPORT=9273 \
+    PROMETHEUSPATH="/metrics"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
