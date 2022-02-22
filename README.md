@@ -186,7 +186,7 @@ These variables control the sending of flight data and dump978 metrics to [Influ
 
 ### Prometheus Options
 
-These variables control exposing flight data and readsb metrics to [Prometheus](https://prometheus.io) (via a built-in instance of [Telegraf](https://docs.influxdata.com/telegraf/)).
+These variables control exposing flight data to [Prometheus](https://prometheus.io) (via a built-in instance of [Telegraf](https://docs.influxdata.com/telegraf/)).
 
 | Variable | Description | Default |
 |----------|-------------|---------|
