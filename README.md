@@ -1,13 +1,11 @@
-# mikenye/dump978
+# sdr-enthusiasts/docker-dump978
 
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/mikenye/docker-dump978/Deploy%20to%20Docker%20Hub)](https://github.com/mikenye/docker-dump978/actions?query=workflow%3A%22Deploy+to+Docker+Hub%22)
-[![Docker Pulls](https://img.shields.io/docker/pulls/mikenye/dump978.svg)](https://hub.docker.com/r/mikenye/dump978)
 [![Docker Image Size (tag)](https://img.shields.io/docker/image-size/mikenye/dump978/latest)](https://hub.docker.com/r/mikenye/dump978)
 [![Discord](https://img.shields.io/discord/734090820684349521)](https://discord.gg/sTf9uYF)
 
 This container provides the FlightAware 978MHz UAT decoder, and the ADSBExchange fork of `uat2esnt`, working together in harmony. A rare example of harmony in these turblent times. :-)
 
-This container can be used alongside [mikenye/readsb-protobuf](https://github.com/mikenye/docker-readsb-protobuf) to provide UAT into several feeders.
+This container can be used alongside [sdr-enthusiasts/docker-readsb-protobuf](https://github.com/sdr-enthusiasts/docker-readsb-protobuf) to provide UAT into several feeders.
 
 This container also contains InfluxData's [Telegraf](https://docs.influxdata.com/telegraf/), and can send flight data and `dump978` metrics to InfluxDB (if wanted - not started by default).
 
@@ -36,7 +34,7 @@ docker run \
     -p 37981:37981 \
     --device /dev/bus/usb:/dev/bus/usb \
     -e DUMP978_RTLSDR_DEVICE=00000978 \
-    mikenye/dump978
+    ghcr.io/sdr-enthusiasts/docker-dump978:latest
 ```
 
 You can now:
@@ -61,7 +59,7 @@ volumes:
 
 services:
   readsb:
-    image: mikenye/readsb-protobuf
+    image: ghcr.io/sdr-enthusiasts/docker-readsb-protobuf:latest
     tty: true
     container_name: readsb
     restart: always
@@ -90,7 +88,7 @@ services:
       - readsbpb_autogain:/run/autogain
 
   dump978:
-    image: mikenye/dump978
+    image: ghcr.io/sdr-enthusiasts/docker-dump978:latest
     tty: true
     container_name: dump978
     restart: always
@@ -204,10 +202,6 @@ These variables control exposing flight data to [Prometheus](https://prometheus.
 
 ## Getting help
 
-Please feel free to [open an issue on the project's GitHub](https://github.com/mikenye/docker-dump978/issues).
+Please feel free to [open an issue on the project's GitHub](https://github.com/sdr-enthusiasts/docker-dump978/issues).
 
 I also have a [Discord channel](https://discord.gg/sTf9uYF), feel free to [join](https://discord.gg/sTf9uYF) and converse.
-
-## Changelog
-
-See the project's [commit history](https://github.com/mikenye/docker-dump978/commits/master).
