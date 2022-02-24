@@ -130,7 +130,12 @@ RUN set -x && \
     apt-get update && \
     apt-get install --no-install-recommends -y telegraf && \
     # Deploy s6-overlay.
-    curl -s https://raw.githubusercontent.com/mikenye/deploy-s6-overlay/master/deploy-s6-overlay.sh | sh && \
+    curl \
+      --silent \
+      --output /tmp/deploy-s6-overlay.sh \
+      https://raw.githubusercontent.com/mikenye/deploy-s6-overlay/master/deploy-s6-overlay.sh \
+      && \
+    bash /tmp/deploy-s6-overlay.sh && \
     # Clean up
     apt-get remove -y ${TEMP_PACKAGES[@]} && \
     apt-get autoremove -y && \
