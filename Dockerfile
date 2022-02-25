@@ -146,7 +146,7 @@ RUN set -x && \
     mkdir -p /run/uat2json && \
     popd && \
     # Install telegraf
-    curl --location --silent --output /tmp/influxdb.key https://repos.influxdata.com/influxdb.key && \
+    curl --location --output /tmp/influxdb.key https://repos.influxdata.com/influxdb.key && \
     apt-key add /tmp/influxdb.key && \
     source /etc/os-release && \
     echo "deb https://repos.influxdata.com/debian $VERSION_CODENAME stable" > /etc/apt/sources.list.d/influxdb.list && \
