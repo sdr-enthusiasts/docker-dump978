@@ -165,7 +165,7 @@ RUN set -x && \
     apt-get autoremove -y && \
     rm -rf /src/* /tmp/* /var/lib/apt/lists/* && \
     # Write versions
-    /usr/local/bin/telegraf --version > /VERSIONS  && \
+    telegraf --version > /VERSIONS  && \
     ( dump978-fa --version > /VERSIONS 2>&1 || true ) && \
     grep dump978 /VERSIONS | cut -d ' ' -f2 >> /CONTAINER_VERSION && \
     # Print versions
