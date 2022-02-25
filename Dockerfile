@@ -50,7 +50,7 @@ RUN set -x && \
     cp -v ./extract_nexrad /usr/local/bin/ && \
     mkdir -p /run/uat2json && \
     popd && \
-    mkdir -p /etc/telegraf && \
+    mkdir -p /etc/telegraf/telegraf.d && \
     # Clean up
     apt-get remove -y ${TEMP_PACKAGES[@]} && \
     apt-get autoremove -y && \
