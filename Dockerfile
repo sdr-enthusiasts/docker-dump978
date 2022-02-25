@@ -1,3 +1,24 @@
+# Build telegraf
+FROM golang:1-bullseye AS telegraf_builder
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+RUN set -x && \
+    # Get tag of latest release
+    BRANCH_TELEGRAF=$(git -c 'versionsort.suffix=-' ls-remote --tags --sort='v:refname' 'https://github.com/influxdata/telegraf.git' | grep -v '\^' | cut -d '/' -f 3 | grep '^v.*' | grep -v '\-rc.*\$' | tail -1) && \
+    # Clone repo (specific release)
+    git clone \
+        --branch "$BRANCH_TELEGRAF" \
+        --single-branch \
+        --depth=1 \
+        https://github.com/influxdata/telegraf.git \
+        /src/telegraf \
+        && \
+    # Build
+    pushd /src/telegraf && \
+    make -j "$(nproc)"
+
+# Build final
 FROM debian:buster-20220125-slim
 
 ENV BRANCH_RTLSDR="ed0317e6a58c098874ac58b769cf2e609c18d9a5" \
@@ -13,7 +34,10 @@ ENV BRANCH_RTLSDR="ed0317e6a58c098874ac58b769cf2e609c18d9a5" \
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Copy config files
+# Copy telegraf
+COPY --from=telegraf_builder /src/telegraf/telegraf /usr/local/bin/telegraf
+
+# Copy rootfs
 COPY rootfs/ /
 
 RUN set -x && \
@@ -47,8 +71,6 @@ RUN set -x && \
     KEPT_PACKAGES+=(libboost-filesystem1.67.0) && \
     # uat2esnt dependencies (+ telegraf)
     KEPT_PACKAGES+=(socat) && \
-    # telegraf dependencies
-    TEMP_PACKAGES+=(apt-transport-https) && \
     # healthcheck dependencies
     KEPT_PACKAGES+=(net-tools) && \
     KEPT_PACKAGES+=(jq) && \
@@ -123,16 +145,6 @@ RUN set -x && \
     cp -v ./extract_nexrad /usr/local/bin/ && \
     mkdir -p /run/uat2json && \
     popd && \
-    # Install telegraf
-    curl \
-        --location \
-        --output /etc/apt/trusted.gpg.d/influxdb.asc \
-        https://repos.influxdata.com/influxdb.key \
-        && \
-    source /etc/os-release && \
-    echo "deb https://repos.influxdata.com/${ID} ${VERSION_CODENAME} stable" | tee /etc/apt/sources.list.d/influxdb.list && \
-    apt-get update && \
-    apt-get install --no-install-recommends -y telegraf && \
     # Deploy s6-overlay.
     curl \
       --silent \
@@ -144,7 +156,8 @@ RUN set -x && \
     apt-get remove -y ${TEMP_PACKAGES[@]} && \
     apt-get autoremove -y && \
     rm -rf /src/* /tmp/* /var/lib/apt/lists/* && \
-    # Write container version 
+    # Write versions
+    /usr/local/bin/telegraf --version > /VERSIONS  && \
     ( dump978-fa --version > /VERSIONS 2>&1 || true ) && \
     grep dump978 /VERSIONS | cut -d ' ' -f2 >> /CONTAINER_VERSION && \
     # Print versions
