@@ -124,9 +124,13 @@ RUN set -x && \
     mkdir -p /run/uat2json && \
     popd && \
     # Install telegraf
-    curl --location --silent -o - https://repos.influxdata.com/influxdb.key | apt-key add - && \
-    source /etc/os-release && \ 
-    echo "deb https://repos.influxdata.com/debian $VERSION_CODENAME stable" > /etc/apt/sources.list.d/influxdb.list && \
+    curl \
+        --location \
+        --output /etc/apt/trusted.gpg.d/influxdb.asc \
+        https://repos.influxdata.com/influxdb.key \
+        && \
+    source /etc/os-release && \
+    echo "deb https://repos.influxdata.com/${ID} ${VERSION_CODENAME} stable" | tee /etc/apt/sources.list.d/influxdb.list && \
     apt-get update && \
     apt-get install --no-install-recommends -y telegraf && \
     # Deploy s6-overlay.
