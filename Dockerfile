@@ -21,6 +21,8 @@
 # Build final
 FROM debian:buster-20220125-slim
 
+COPY --from=telegraf /usr/bin/telegraf /usr/bin/telegraf
+
 ENV BRANCH_RTLSDR="ed0317e6a58c098874ac58b769cf2e609c18d9a5" \
     S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
     URL_REPO_DUMP978="https://github.com/flightaware/dump978.git" \
@@ -145,14 +147,7 @@ RUN set -x && \
     cp -v ./extract_nexrad /usr/local/bin/ && \
     mkdir -p /run/uat2json && \
     popd && \
-    # Install telegraf
-    curl --location --output /tmp/influxdb.key https://repos.influxdata.com/influxdb.key && \
-    apt-key add /tmp/influxdb.key && \
-    source /etc/os-release && \
-    echo "deb https://repos.influxdata.com/debian $VERSION_CODENAME stable" > /etc/apt/sources.list.d/influxdb.list && \
-    apt-get update && \
-    apt-get install --no-install-recommends -y telegraf && \
-    mv -v /etc/telegraf/telegraf.conf /etc/telegraf/telegraf.conf.original && \
+    mkdir -p /etc/telegraf && \
     # Deploy s6-overlay.
     curl \
       --silent \
