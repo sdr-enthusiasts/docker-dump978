@@ -1,22 +1,22 @@
 # Build telegraf
-FROM golang:1-bullseye AS telegraf_builder
+# FROM golang:1-bullseye AS telegraf_builder
 
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+# SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-RUN set -x && \
-    # Get tag of latest release
-    BRANCH_TELEGRAF=$(git -c 'versionsort.suffix=-' ls-remote --tags --sort='v:refname' 'https://github.com/influxdata/telegraf.git' | grep -v '\^' | cut -d '/' -f 3 | grep '^v.*' | grep -v '\-rc.*\$' | tail -1) && \
-    # Clone repo (specific release)
-    git clone \
-        --branch "$BRANCH_TELEGRAF" \
-        --single-branch \
-        --depth=1 \
-        https://github.com/influxdata/telegraf.git \
-        /src/telegraf \
-        && \
-    # Build
-    pushd /src/telegraf && \
-    make -j "$(nproc)"
+# RUN set -x && \
+#     # Get tag of latest release
+#     BRANCH_TELEGRAF=$(git -c 'versionsort.suffix=-' ls-remote --tags --sort='v:refname' 'https://github.com/influxdata/telegraf.git' | grep -v '\^' | cut -d '/' -f 3 | grep '^v.*' | grep -v '\-rc.*\$' | tail -1) && \
+#     # Clone repo (specific release)
+#     git clone \
+#         --branch "$BRANCH_TELEGRAF" \
+#         --single-branch \
+#         --depth=1 \
+#         https://github.com/influxdata/telegraf.git \
+#         /src/telegraf \
+#         && \
+#     # Build
+#     pushd /src/telegraf && \
+#     make -j "$(nproc)"
 
 # Build final
 FROM debian:buster-20220125-slim
@@ -145,6 +145,14 @@ RUN set -x && \
     cp -v ./extract_nexrad /usr/local/bin/ && \
     mkdir -p /run/uat2json && \
     popd && \
+    # Install telegraf
+    curl --location --silent -o /tmp/influxdb.key https://repos.influxdata.com/influxdb.key && \
+    apt-key add /tmp/influxdb.key && \
+    source /etc/os-release && \
+    echo "deb https://repos.influxdata.com/debian $VERSION_CODENAME stable" > /etc/apt/sources.list.d/influxdb.list && \
+    apt-get update && \
+    apt-get install --no-install-recommends -y telegraf && \
+    mv -v /etc/telegraf/telegraf.conf /etc/telegraf/telegraf.conf.original && \
     # Deploy s6-overlay.
     curl \
       --silent \
