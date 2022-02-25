@@ -1,22 +1,6 @@
-# Build telegraf
-# FROM golang:1-bullseye AS telegraf_builder
+FROM telegraf AS telegraf
 
-# SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-
-# RUN set -x && \
-#     # Get tag of latest release
-#     BRANCH_TELEGRAF=$(git -c 'versionsort.suffix=-' ls-remote --tags --sort='v:refname' 'https://github.com/influxdata/telegraf.git' | grep -v '\^' | cut -d '/' -f 3 | grep '^v.*' | grep -v '\-rc.*\$' | tail -1) && \
-#     # Clone repo (specific release)
-#     git clone \
-#         --branch "$BRANCH_TELEGRAF" \
-#         --single-branch \
-#         --depth=1 \
-#         https://github.com/influxdata/telegraf.git \
-#         /src/telegraf \
-#         && \
-#     # Build
-#     pushd /src/telegraf && \
-#     make -j "$(nproc)"
+RUN touch /tmp/.nothing
 
 # Build final
 FROM debian:buster-20220125-slim
