@@ -34,8 +34,8 @@ ENV BRANCH_RTLSDR="ed0317e6a58c098874ac58b769cf2e609c18d9a5" \
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Copy telegraf
-COPY --from=telegraf_builder /src/telegraf/telegraf /usr/local/bin/telegraf
+# # Copy telegraf
+# COPY --from=telegraf_builder /src/telegraf/telegraf /usr/local/bin/telegraf
 
 # Copy rootfs
 COPY rootfs/ /
