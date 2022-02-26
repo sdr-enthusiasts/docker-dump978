@@ -71,7 +71,7 @@ EXPOSE 30978/tcp 30979/tcp 37981/tcp
 
 # Add healthcheck - very long start period due to relatively small number of UAT aircraft
 # May decrease start-period in future
-HEALTHCHECK --start-period=7200s --interval=600s CMD /scripts/healthcheck.sh
+HEALTHCHECK --timeout=60s --start-period=7200s --interval=600s CMD /scripts/healthcheck.sh
 
 # TODO
 #  - work out a way to test - maybe capture some output and parse it?
