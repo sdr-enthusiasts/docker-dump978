@@ -43,6 +43,7 @@ RUN set -x && \
     # Build & install uat2esnt
     git clone --branch=master --single-branch --depth=1 "https://github.com/adsbxchange/uat2esnt.git" "/src/uat2esnt" && \
     pushd "/src/uat2esnt" && \
+    echo "uat2esnt $(git log | head -1)" >> /VERSIONS && \
     make all test && \
     cp -v ./uat2text /usr/local/bin/ && \
     cp -v ./uat2esnt /usr/local/bin/ && \
