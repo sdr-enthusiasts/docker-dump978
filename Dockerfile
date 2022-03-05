@@ -50,6 +50,7 @@ RUN set -x && \
     cp -v ./uat2json /usr/local/bin/ && \
     cp -v ./extract_nexrad /usr/local/bin/ && \
     mkdir -p /run/uat2json && \
+    mkdir -p /run/stats && \
     popd && \
     mkdir -p /etc/telegraf/telegraf.d && \
     # Clean up
