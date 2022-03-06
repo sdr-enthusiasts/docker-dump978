@@ -61,6 +61,44 @@ def init():
   raw["beacon_tracks"]        = set()
   raw["adsr_tracks"]          = set()
 
+def parse(msg, origin):
+  raw["addr"].add(msg["address"])
+  raw["rssi"].append(msg["metadata"]["rssi"])
+
+  try:
+    if msg["airground_state"] == "ground":
+      raw["ground_tracks"].add(msg["address"])
+    elif msg["airground_state"] == "airborne":
+      raw["airborne_tracks"].add(msg["address"])
+    elif msg["airground_state"] == "supersonic":
+      raw["supersonic_tracks"].add(msg["address"])
+  except KeyError:
+    pass
+
+  try:
+    if "adsb" in msg["address_qualifier"]:
+      raw["adsb_tracks"].add(msg["address"])
+    elif "tisb" in msg["address_qualifier"]:
+      raw["tisb_tracks"].add(msg["address"])
+    elif "vehicle" == msg["address_qualifier"]:
+      raw["vehicle_tracks"].add(msg["address"])
+    elif "fixed_beacon" == msg["address_qualifier"]:
+      raw["beacon_tracks"].add(msg["address"])
+    elif "adsr_other" == msg["address_qualifier"]:
+      raw["adsr_tracks"].add(msg["address"])
+  except KeyError:
+    pass
+
+  try:
+    pos = (float(msg["position"]["lat"]), float(msg["position"]["lon"]))
+    raw["tracks_with_position"].add(msg["address"])
+    if origin is not None:
+      dist, brng = gps_dist(origin, pos)
+      raw["dist"][brng] = max(dist, raw["dist"][brng])
+      raw["max_dist"][brng] = max(dist, raw["max_dist"][brng])
+  except KeyError:
+    pass
+
 def aggregate(origin):
   global raw
   global mutex
@@ -131,42 +169,7 @@ def main():
     msg = json.loads(msg_str)
     with mutex:
       try:
-        raw["addr"].add(msg["address"])
-        raw["rssi"].append(msg["metadata"]["rssi"])
-
-        try:
-          if msg["airground_state"] == "ground":
-            raw["ground_tracks"].add(msg["address"])
-          elif msg["airground_state"] == "airborne":
-            raw["airborne_tracks"].add(msg["address"])
-          elif msg["airground_state"] == "supersonic":
-            raw["supersonic_tracks"].add(msg["address"])
-        except KeyError:
-          pass
-
-        try:
-          if "adsb" in msg["address_qualifier"]:
-            raw["adsb_tracks"].add(msg["address"])
-          elif "tisb" in msg["address_qualifier"]:
-            raw["tisb_tracks"].add(msg["address"])
-          elif "vehicle" == msg["address_qualifier"]:
-            raw["vehicle_tracks"].add(msg["address"])
-          elif "fixed_beacon" == msg["address_qualifier"]:
-            raw["beacon_tracks"].add(msg["address"])
-          elif "adsr_other" == msg["address_qualifier"]:
-            raw["adsr_tracks"].add(msg["address"])
-        except KeyError:
-          pass
-
-        try:
-          pos = (float(msg["position"]["lat"]), float(msg["position"]["lon"]))
-          raw["tracks_with_position"].add(msg["address"])
-          if origin is not None:
-            dist, brng = gps_dist(origin, pos)
-            raw["dist"][brng] = max(dist, raw["dist"][brng])
-            raw["max_dist"][brng] = max(dist, raw["max_dist"][brng])
-        except KeyError:
-          pass
+        parse(msg, origin)
       except KeyError as e:
         LOG("Exception message : %s" % str(e))
         LOG("Offending JSON : %s" % msg_str)
