@@ -32,18 +32,19 @@ def gps_dist(origin, destination):
 
   dlat = math.radians(lat2-lat1)
   dlon = math.radians(lon2-lon1)
-  a = math.sin(dlat/2) * math.sin(dlat/2) + math.cos(math.radians(lat1)) \
-      * math.cos(math.radians(lat2)) * math.sin(dlon/2) * math.sin(dlon/2)
-  c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-  dist = round(radius * c)
+  coslat1 = math.cos(math.radians(lat1))
+  coslat2 = math.cos(math.radians(lat2))
+  sinlat1 = math.sin(math.radians(lat1))
+  sinlat2 = math.sin(math.radians(lat2))
 
-  x = math.cos(math.radians(lat2)) * math.sin(dlon)
-  y = math.cos(math.radians(lat1)) * math.sin(math.radians(lat2)) \
-      - math.sin(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.cos(dlon)
-  brng = math.atan2(x,y)
-  brng = math.degrees(brng)
+  a = math.sin(dlat/2)**2 + coslat1 * coslat2 * math.sin(dlon/2)**2
+  dist = 2 * radius * math.atan2(math.sqrt(a), math.sqrt(1-a))
 
-  return dist, round(brng/5) % 72
+  x = coslat2 * math.sin(dlon)
+  y = coslat1 * sinlat2 - sinlat1 * coslat2 * math.cos(dlon)
+  brng = math.degrees(math.atan2(x,y))
+
+  return round(dist), round(brng/5) % 72
 
 def init():
   global raw
