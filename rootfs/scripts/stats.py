@@ -2,18 +2,29 @@
 
 # Collect last 1 min stats from dump978 JSON feed
 
+import copy
 import json
 import math
 import os
+import collections
 import socket
-import sys
 import threading
 import time
 
 ################################################################################
-# Shared global stats dictionary and its mutex
+# Global variables
 ################################################################################
-raw = {}
+
+# Statistics, grouped by type
+set_stats = ["total_tracks", "tracks_with_position", "airborne_tracks",
+             "ground_tracks", "supersonic_tracks", "adsb_tracks", "tisb_tracks",
+             "beacon_tracks", "adsr_tracks"]
+
+# Deque of historical statistics
+stats_hist = collections.deque([], 15)
+
+# Live stats dictionary and its mutex
+latest = {}
 mutex = threading.Lock()
 
 ################################################################################
@@ -47,112 +58,121 @@ def gps_dist(origin, destination):
   return round(dist), round(brng/5) % 72
 
 def init():
-  global raw
-  raw["addr"]                 = set()
-  raw["rssi"]                 = list()
-  raw["dist"]                 = [0] * 72
-  raw["tracks_with_position"] = set()
-  raw["airborne_tracks"]      = set()
-  raw["ground_tracks"]        = set()
-  raw["supersonic_tracks"]    = set()
-  raw["adsb_tracks"]          = set()
-  raw["tisb_tracks"]          = set()
-  raw["surface_tracks"]       = set()
-  raw["beacon_tracks"]        = set()
-  raw["adsr_tracks"]          = set()
+  global latest
+  latest["rssi"]                 = list()
+  latest["dist"]                 = [0] * 72
+  for s in set_stats:
+    latest[s] = set()
 
 def parse(msg, origin):
-  raw["addr"].add(msg["address"])
-  raw["rssi"].append(msg["metadata"]["rssi"])
+  latest["total_tracks"].add(msg["address"])
+  latest["rssi"].append(float(msg["metadata"]["rssi"]))
 
   try:
     if msg["airground_state"] == "ground":
-      raw["ground_tracks"].add(msg["address"])
+      latest["ground_tracks"].add(msg["address"])
     elif msg["airground_state"] == "airborne":
-      raw["airborne_tracks"].add(msg["address"])
+      latest["airborne_tracks"].add(msg["address"])
     elif msg["airground_state"] == "supersonic":
-      raw["supersonic_tracks"].add(msg["address"])
+      latest["supersonic_tracks"].add(msg["address"])
   except KeyError:
     pass
 
   try:
     if "adsb" in msg["address_qualifier"]:
-      raw["adsb_tracks"].add(msg["address"])
+      latest["adsb_tracks"].add(msg["address"])
     elif "tisb" in msg["address_qualifier"]:
-      raw["tisb_tracks"].add(msg["address"])
+      latest["tisb_tracks"].add(msg["address"])
     elif "vehicle" == msg["address_qualifier"]:
-      raw["vehicle_tracks"].add(msg["address"])
+      latest["vehicle_tracks"].add(msg["address"])
     elif "fixed_beacon" == msg["address_qualifier"]:
-      raw["beacon_tracks"].add(msg["address"])
+      latest["beacon_tracks"].add(msg["address"])
     elif "adsr_other" == msg["address_qualifier"]:
-      raw["adsr_tracks"].add(msg["address"])
+      latest["adsr_tracks"].add(msg["address"])
   except KeyError:
     pass
 
   try:
     pos = (float(msg["position"]["lat"]), float(msg["position"]["lon"]))
-    raw["tracks_with_position"].add(msg["address"])
+    latest["tracks_with_position"].add(msg["address"])
     if origin is not None:
       dist, brng = gps_dist(origin, pos)
-      raw["dist"][brng] = max(dist, raw["dist"][brng])
-      raw["max_dist"][brng] = max(dist, raw["max_dist"][brng])
+      latest["dist"][brng] = max(dist, latest["dist"][brng])
+      latest["max_dist"][brng] = max(dist, latest["max_dist"][brng])
   except KeyError:
     pass
 
-def aggregate(origin):
-  global raw
+def extract(lastx):
+  stats = dict()
+
+  stats["strong_messages"]      = sum([1 if r > -3.0 else 0 for r in lastx["rssi"]])
+  stats["total_messages"]       = len(lastx["rssi"])
+  for s in set_stats:
+    stats[s] = len(lastx[s])
+
+  if len(lastx["rssi"]) > 0:
+    stats["peak_rssi"] = max(lastx["rssi"])
+    stats["avg_rssi"] = sum(lastx["rssi"])/len(lastx["rssi"])
+
+    if lastx["max_dist"] is not None:
+      stats["max_distance_m"] = max(lastx["dist"])
+      stats["max_distance_nmi"] = max(lastx["dist"]) // 1852
+
+  return stats
+
+def aggregate():
+  global latest
   global mutex
 
   while True:
     time.sleep(60)
     stats = dict()
-    range = list()
 
     with mutex:
-      stats["strong_messages"]      = sum([1 if r > -3.0 else 0 for r in raw["rssi"]])
-      stats["total_messages"]       = len(raw["rssi"])
-      stats["total_tracks"]         = len(raw["addr"])
-      stats["tracks_with_position"] = len(raw["tracks_with_position"])
-      stats["airborne_tracks"]      = len(raw["airborne_tracks"])
-      stats["ground_tracks"]        = len(raw["ground_tracks"])
-      stats["supersonic_tracks"]    = len(raw["supersonic_tracks"])
-      stats["adsb_tracks"]          = len(raw["adsb_tracks"])
-      stats["tisb_tracks"]          = len(raw["tisb_tracks"])
-      stats["surface_tracks"]       = len(raw["surface_tracks"])
-      stats["beacon_tracks"]        = len(raw["beacon_tracks"])
-      stats["adsr_tracks"]          = len(raw["adsr_tracks"])
-
-      if len(raw["rssi"]) > 0:
-        stats["peak_rssi"] = max(raw["rssi"])
-        stats["avg_rssi"] = sum(raw["rssi"])/len(raw["rssi"])
-
-        if origin is not None:
-          range = raw["max_dist"]
-          stats["max_distance_m"] = max(raw["dist"])
-          stats["max_distance_nmi"] = max(raw["dist"]) // 1852
-
+      stats_hist.appendleft(copy.deepcopy(latest))
       init()
+
+    last_15min = stats_hist[0]
+
+    for i,d in enumerate(stats_hist):
+      if i == 0:
+        continue
+      last_15min["rssi"] += d["rssi"]
+      for j in range(72):
+        last_15min["dist"][j] = max(last_15min["dist"][j], d["dist"][j])
+      for s in set_stats:
+        last_15min[s] |= d[s]
+      if i == 3:
+        last_5min = last_15min
+
+    stats["last_1min"] = extract(stats_hist[0])
+    if len(stats_hist) >= 5:
+      stats["last_5min"] = extract(last_5min)
+    if len(stats_hist) >= 15:
+      stats["last_15min"] = extract(last_15min)
 
     with open("/run/stats/stats.json", "w") as fout:
       json.dump(stats, fout, indent=4, sort_keys=True)
       fout.write("\n")
 
-    with open("/run/stats/polar_range.influx", "w") as fout:
-      for b, d in enumerate(range):
-        fout.write("polar_range,bearing=%02d range=%d %d\n" % (b, d, time.time_ns()))
+    if stats_hist[0]["max_dist"] is not None:
+      with open("/run/stats/polar_range.influx", "w") as fout:
+        for b, d in enumerate(stats_hist[0]["max_dist"]):
+          fout.write("polar_range,bearing=%02d range=%d %d\n" % (b, d, time.time_ns()))
 
 def main():
-  global raw
+  global latest
   global mutex
 
   init()
-  raw["max_dist"] = [0] * 72
 
   try:
     origin = (float(os.environ["LAT"]), float(os.environ["LON"]))
+    latest["max_dist"] = [0] * 72
   except:
     LOG("receiver location not set")
     origin = None
+    latest["max_dist"] = None
 
   host = '127.0.0.1'
   port = 30979
@@ -163,7 +183,7 @@ def main():
 
   LOG("connected to dump978 JSON output")
 
-  threading.Thread(target=aggregate, args=(origin,)).start()
+  threading.Thread(target=aggregate).start()
 
   for msg_str in fsock:
     msg = json.loads(msg_str)
@@ -171,8 +191,8 @@ def main():
       try:
         parse(msg, origin)
       except KeyError as e:
-        LOG("Exception message : %s" % str(e))
-        LOG("Offending JSON : %s" % msg_str)
+        LOG("KeyError : %s" % str(e))
+        LOG("Offending message JSON : %s" % msg_str)
 
 if __name__ == "__main__":
   main()
