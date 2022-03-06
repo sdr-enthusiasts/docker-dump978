@@ -11,9 +11,6 @@ ENV PROMETHEUSPORT=9273 \
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Copy rootfs
-COPY rootfs/ /
-
 # Copy telegraf
 COPY --from=telegraf /usr/bin/telegraf /usr/bin/telegraf
 
@@ -64,6 +61,9 @@ RUN set -x && \
     # Print versions
     cat /VERSIONS && \
     cat /CONTAINER_VERSION
+
+# Copy rootfs
+COPY rootfs/ /
 
 # Set s6 init as entrypoint
 ENTRYPOINT [ "/init" ]
