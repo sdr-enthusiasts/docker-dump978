@@ -62,8 +62,8 @@ RUN set -x && \
     cat /VERSIONS && \
     cat /CONTAINER_VERSION
 
-# Copy rootfs
-COPY rootfs/ /
+# temporary for debugging
+RUN apt update && apt install nano
 
 # Set s6 init as entrypoint
 ENTRYPOINT [ "/init" ]
@@ -77,3 +77,6 @@ HEALTHCHECK --timeout=60s --start-period=7200s --interval=600s CMD /scripts/heal
 
 # TODO
 #  - work out a way to test - maybe capture some output and parse it?
+
+# Copy rootfs
+COPY rootfs/ /
