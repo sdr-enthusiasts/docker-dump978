@@ -41,12 +41,6 @@ def parse_total_tracks(store, msg):
 
 # Defines a single statistic to extract from decoded JSON messages
 class Stat:
-    name = None
-    _initialize = None
-    _parse = None
-    _get = None
-    store = None
-
     def __init__(self, name, initializer, parser, getter, aggregator):
         self.name = name
         self._initialize = initializer
@@ -69,8 +63,6 @@ class Stat:
 
 # Defines a collection of statistics to store over a 1 minute period
 class Stats_1min:
-    stats = list()
-
     def __init__(self):
 ## Statistics, grouped by type
 #stats_def = [{"total_tracks": },
@@ -82,6 +74,7 @@ class Stats_1min:
 #             {"tisb_tracks": },
 #             {"beacon_tracks": },
 #             {"adsr_tracks": }]
+        self.stats = list()
         self.stats.append(Stat("total_tracks", set, parse_total_tracks, len, aggregate_set))
 
     def initialize(self):
@@ -108,6 +101,9 @@ class Stats_1min:
         for stat in self.stats:
             out[stat.name] = stat.get()
         return out
+
+    def __str__(self):
+        return json.dumps(self.to_dict())
 
 ################################################################################
 # Global variables
