@@ -71,14 +71,18 @@ fi
   echo "  data_format = \"json\""
 } > "$INPUT_STATS_DATA"
 
-##### TELEGRAF CONFIG - INPUT FROM stats polar_range #####
-{
-  echo "[[inputs.file]]"
-  echo "  files = [\"/run/stats/polar_range.influx\"]"
-  echo "  interval = \"60s\""
-  echo "  name_override = \"polar_range\""
-  echo "  data_format = \"influx\""
-} > "$INPUT_POLAR_RANGE_DATA"
+if [[ -n "$LAT" ]] || [[ -n "$LON" ]]; then
+
+  ##### TELEGRAF CONFIG - INPUT FROM stats polar_range #####
+  {
+    echo "[[inputs.file]]"
+    echo "  files = [\"/run/stats/polar_range.influx\"]"
+    echo "  interval = \"60s\""
+    echo "  name_override = \"polar_range\""
+    echo "  data_format = \"influx\""
+  } > "$INPUT_POLAR_RANGE_DATA"
+
+fi
 
 # If INFLUXDB_SKIP_AIRCRAFT is NOT specified push aircraft data to influx
 if [[ -z "$INFLUXDB_SKIP_AIRCRAFT" ]]; then
