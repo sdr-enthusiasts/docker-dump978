@@ -1,170 +1,226 @@
 #!/usr/bin/with-contenv python3
 
+from abc import ABCMeta, abstractmethod
 import collections
 from copy import deepcopy
 import json
+import logging
+from logging import info, debug, warning
 import math
 from os import environ
 import socket
-import threading
+from threading import Lock, Thread
 import time
+from typing import Callable
+
 
 ###############################################################################
-# Helper functions for logging
+# Classes for various types of statistics
 ###############################################################################
 
-stdout_lock = threading.Lock()
+class BaseStatistic(metaclass=ABCMeta):
+    """Defines an abstract base class for a single statistic to collect over time"""
 
-
-def LOGW(msg):
-    with stdout_lock:
-        print("WARNING: " + str(msg))
-
-
-def LOGD(msg):
-    if DEBUG:
-        with stdout_lock:
-            print("DEBUG: " + str(msg))
-
-###############################################################################
-# Helper functions to various stat types
-###############################################################################
-
-
-# Extract a (potentially nested) key or list of keys from a dict
-def extract(msg, keys):
-    try:
-        out = []
-        for key in keys:
-            val = msg
-            for k in key:
-                val = val[k]
-            out.append(val)
-        return out
-    except BaseException as e:
-        LOGW("%s : %s looking for keys %s" % (type(e), str(e), str(keys)))
-        LOGW("Offending message JSON : %s" % msg)
-        raise e
-
-
-def parse_cnt(keys=None, test=None):
-    def wrapper(store, msg):
-        val = extract(msg, keys)[0]
-        if val is not None:
-            if test is None or test(val):
-                store[0] += 1
-    return wrapper
-
-
-def get_cnt(store):
-    return store[0]
-
-
-def aggregate_cnt(old, new):
-    old[0] = old[0] + new[0]
-
-
-def parse_range(origin):
-    def wrapper(store, msg):
-        dist, brng = gps_dist(origin, (msg["position"]["lat"], msg["position"]["lon"]))
-        store[brng] = max(store[brng], dist)
-    return wrapper
-
-
-def aggregate_range(old, new):
-    for i, v in enumerate(old):
-        old[i] = max(v, new[i])
-
-
-def parse_max(keys):
-    def wrapper(store, msg):
+    @staticmethod
+    def extract(msg, keys):
+        """Extract a key, list of keys, nested key, or list of nested keys from a dictionary"""
         try:
-            val = extract(msg, keys)[0]
-            if store[0] is None:
-                store[0] = float(val)
-            else:
-                store[0] = max(store[0], float(val))
-        except BaseException:
-            pass
-    return wrapper
+            if type(keys) is str:
+                """Single value"""
+                return msg[keys]
+            if type(keys) is tuple:
+                """Single nested value"""
+                val = msg
+                for k in keys:
+                    val = val[k]
+                return val
+            if type(keys) is list:
+                """Multiple values"""
+                out = []
+                for k in keys:
+                    out.append(BaseStatistic.extract(msg, k))
+                return out
+        except Exception as e:
+            warning("Couldn't parse keys %s in JSON message:\n%s" % (keys, msg))
+            raise e
 
-
-def get_max(store):
-    return max(store)
-
-
-def aggregate_max(old, new):
-    if new[0] is None:
-        return
-    if old[0] is None:
-        old[0] = new[0]
-        return
-    old[0] = max(old[0], new[0])
-
-
-def parse_avg(keys):
-    def wrapper(store, msg):
-        val = extract(msg, keys)[0]
-        if val is not None:
-            store[0] += float(val)
-            store[1] += 1
-    return wrapper
-
-
-def get_avg(store):
-    try:
-        return store[0] / store[1]
-    except BaseException:
-        return None
-
-
-def aggregate_avg(old, new):
-    old = [x + y for x, y in zip(old, new)]
-
-
-def parse_set(keys, mask=None):
-    def wrapper(store, msg):
-        val = extract(msg, keys)[0]
-        if val is not None:
-            if mask is None or mask in val:
-                store.add(msg["address"])
-    return wrapper
-
-
-def aggregate_set(old, new):
-    old |= new
-
-###############################################################################
-# Classes that define individual stats and a collection of stats over a period
-###############################################################################
-
-
-# Defines a single statistic to extract from decoded JSON messages
-class Stat:
-    def __init__(self, name, initializer, parser, getter, aggregator, test=None):
+    def __init__(self, name):
         self.name = name
-        self._initialize = initializer
-        self._parse = parser
-        self._get = getter
-        self._aggregate = aggregator
-        self._test = test
-        self._store = initializer()
+        self.initialize()
+
+    @abstractmethod
+    def initialize(self):
+        pass
+
+    @abstractmethod
+    def parse(self, msg):
+        pass
+
+    @abstractmethod
+    def get(self):
+        pass
+
+    @abstractmethod
+    def aggregate(self, new):
+        pass
+
+
+class AverageStatistic(BaseStatistic):
+    """Used for statistics that measure an average value over time"""
+
+    def __init__(self, name, key):
+        self._key = key
+        super().__init__(name)
 
     def initialize(self):
-        self._store = self._initialize()
+        self._sum = 0
+        self._count = 0
 
     def parse(self, msg):
-        self._parse(self._store, msg)
+        self._sum += float(self.extract(msg, self._key))
+        self._count += 1
 
     def get(self):
-        return self._get(self._store)
+        return None if self._count == 0 else self._sum / self._count
 
     def aggregate(self, new):
-        self._aggregate(self._store, new._store)
+        self._sum += new._sum
+        self._count += new._count
 
 
-# Defines a collection of statistics to store over a 1 minute period
-class Stats_1min:
+class CountStatistic(BaseStatistic):
+    """Used for statistics that count occurences over time"""
+
+    def __init__(self, name, key=None, test=None):
+        self._key = key
+        self._test = test
+        super().__init__(name)
+
+    def initialize(self):
+        self._count = 0
+
+    def parse(self, msg):
+        if self._key is None:
+            self._count += 1
+        else:
+            val = self.extract(msg, self._key)
+            if self._test is None:
+                self._count += 1
+            elif type(self._test) is str and self._test in val:
+                self._count += 1
+            elif type(self._test) is Callable and self._test(val):
+                self._count += 1
+
+    def get(self):
+        return self._count
+
+    def aggregate(self, new):
+        self._count += new._count
+
+
+class MaxStatistic(BaseStatistic):
+    """Used for statistics that measure a maximum value over time"""
+
+    def __init__(self, name, key):
+        self._key = key
+        super().__init__(name)
+
+    def initialize(self):
+        self._max = None
+
+    def parse(self, msg):
+        val = float(self.extract(msg, self._key))
+        if self._max is None:
+            self._max = val
+        else:
+            self._max = max(self._max, val)
+
+    def get(self):
+        return self._max
+
+    def aggregate(self, new):
+        if self._max is None:
+            self._max = new._max
+        elif new._max is not None:
+            self._max = max(self._max, new._max)
+
+
+class RangeStatistic(BaseStatistic):
+    """Used for statistics that measure maximum range value over time"""
+
+    def gps_dist(home, destination):
+        """Meters and angle between two coordinates"""
+
+        lat1, lon1 = home
+        lat2, lon2 = destination
+        radius = 6371000  # meters - change this to change the output distance units
+
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        coslat1 = math.cos(math.radians(lat1))
+        coslat2 = math.cos(math.radians(lat2))
+        sinlat1 = math.sin(math.radians(lat1))
+        sinlat2 = math.sin(math.radians(lat2))
+        a = math.sin(dlat / 2)**2 + coslat1 * coslat2 * math.sin(dlon / 2)**2
+        dist = 2 * radius * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+        x = coslat2 * math.sin(dlon)
+        y = coslat1 * sinlat2 - sinlat1 * coslat2 * math.cos(dlon)
+        brng = math.degrees(math.atan2(x, y))
+
+        return round(dist), brng
+
+    def __init__(self, name, origin):
+        self._origin = origin
+        super().__init__(name)
+
+    def initialize(self):
+        self._range = [0] * 72
+
+    def parse(self, msg):
+        pos = self.extract(msg, [("position", "lat"), ("position", "lon")])
+        dist, brng = self.gps_dist(self._origin, pos)
+        bucket = round(brng / 5) % 72
+        self._range[bucket] = max(dist, self._range[bucket])
+
+    def get(self):
+        return max(self._range)
+
+    def aggregate(self, new):
+        for i, v in enumerate(self._range):
+            self._range[i] = max(v, new._range[i])
+
+
+class UniqueStatistic(BaseStatistic):
+    """Used for statistics that count unique occurences over time"""
+
+    def __init__(self, name, key=None, test=None):
+        self._key = key
+        self._test = test
+        super().__init__(name)
+
+    def initialize(self):
+        self._ids = set()
+
+    def parse(self, msg):
+        val = self.extract(msg, self._key)
+        if self._test is None:
+            self._ids.add(msg["address"])
+        elif type(self._test) is str and self._test in val:
+            self._ids.add(msg["address"])
+        elif type(self._test) is Callable and self._test(val):
+            self._ids.add(msg["address"])
+
+    def get(self):
+        return len(self._ids)
+
+    def aggregate(self, new):
+        self._ids |= new._ids
+
+
+class PeriodStatistics:
+    """A collection of statistics over time"""
+
     def __init__(self):
         self.stats = list()
 
@@ -207,48 +263,14 @@ class Stats_1min:
     def __str__(self):
         return json.dumps(self.to_dict())
 
-###############################################################################
-# Global variables
-###############################################################################
-
-
-# Set to True to enable debug messages  pass
-DEBUG = True
-
-# Deque of historical statistics
-history = collections.deque([], 15)
 
 ###############################################################################
 # Functions
 ###############################################################################
 
+def aggregate(history, raw_lock, raw_latest, json_lock, json_latest, polar_range):
+    """Aggregate stats and write output files"""
 
-# meters and angle between two GPS coordinates
-def gps_dist(home, destination):
-    lat1, lon1 = home
-    lat2, lon2 = destination
-    radius = 6371000  # m
-
-    dlat = math.radians(lat2 - lat1)
-    dlon = math.radians(lon2 - lon1)
-    coslat1 = math.cos(math.radians(lat1))
-    coslat2 = math.cos(math.radians(lat2))
-    sinlat1 = math.sin(math.radians(lat1))
-    sinlat2 = math.sin(math.radians(lat2))
-
-    a = math.sin(dlat / 2)**2 + coslat1 * coslat2 * math.sin(dlon / 2)**2
-    dist = 2 * radius * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
-    x = coslat2 * math.sin(dlon)
-    y = coslat1 * sinlat2 - sinlat1 * coslat2 * math.cos(dlon)
-    brng = math.degrees(math.atan2(x, y))
-
-    return round(dist), round(brng / 5) % 72
-
-
-# Aggregate stats over last 1, 5, and 15 minutes
-# Write the output files
-def aggregate(raw_lock, raw_latest, json_lock, json_latest, polar_range):
     with json_lock:
         history.appendleft(deepcopy(json_latest))
         json_latest.initialize()
@@ -263,7 +285,7 @@ def aggregate(raw_lock, raw_latest, json_lock, json_latest, polar_range):
         if i == 0:
             continue
         last_15min.aggregate(d)
-        if i == 3:
+        if i == 4:
             last_5min = deepcopy(last_15min)
     out = dict()
 
@@ -280,24 +302,23 @@ def aggregate(raw_lock, raw_latest, json_lock, json_latest, polar_range):
     if polar_range is not None:
         polar_range.aggregate(history[0].get("max_distance_m"))
         with open("/run/stats/polar_range.influx", "w") as fout:
-            for b, d in enumerate(polar_range._store):
+            for b, d in enumerate(polar_range._range):
                 fout.write("polar_range,bearing=%02d range=%d %d\n" % (b, d, time.time_ns()))
 
 
-# Parse decoded JSON messages
 def parse_json(fjson, json_lock, json_latest):
-    LOGD("listening for json data")
+    """Parse decoded JSON messages"""
 
+    debug("listening for json data")
     for msg in fjson:
         with json_lock:
             json_latest.parse(json.loads(msg))
 
 
-# Parse raw UAT messages
-# Currently just counts the number of messages
 def parse_raw(fraw, raw_lock, raw_latest):
-    LOGD("listening for raw data")
 
+    """Parse raw UAT messages"""
+    debug("listening for raw data")
     for msg in fraw:
         with raw_lock:
             try:
@@ -305,10 +326,12 @@ def parse_raw(fraw, raw_lock, raw_latest):
                 rssi_end = rssi_begin + msg[rssi_begin:].index(";")
                 raw_latest.parse({"rssi": float(msg[rssi_begin:rssi_end])})
             except ValueError:
-                LOGW("Did not find RSSI in raw message %s" % msg)
+                warning("Did not find RSSI in raw message:\n%s" % msg)
 
 
 def main():
+    logging.disable(logging.NOTSET)
+
     host = '127.0.0.1'
     raw_port = 30978
     json_port = 30979
@@ -317,52 +340,54 @@ def main():
     raw_sock.connect((host, raw_port))
     fraw = raw_sock.makefile(buffering=1)
 
-    LOGD("connected to dump978 raw output")
+    info("connected to dump978 raw output")
 
     json_sock = socket.socket()
     json_sock.connect((host, json_port))
     fjson = json_sock.makefile(buffering=1)
 
-    LOGD("connected to dump978 JSON output")
+    info("connected to dump978 JSON output")
 
-    raw_lock = threading.Lock()
-    raw_latest = Stats_1min()
-    raw_latest.add(Stat("total_raw_messages", lambda: [0], parse_cnt([["rssi"]]), get_cnt, aggregate_cnt))
-    raw_latest.add(Stat("strong_raw_messages", lambda: [0], parse_cnt([["rssi"]], lambda v: float(v) > -3.0), get_cnt, aggregate_cnt))
-    raw_latest.add(Stat("avg_raw_rssi", lambda: [0, 0], parse_avg([["rssi"]]), get_avg, aggregate_avg))
-    raw_latest.add(Stat("peak_raw_rssi", lambda: [None], parse_max([["rssi"]]), get_max, aggregate_max))
+    raw_lock = Lock()
+    raw_latest = PeriodStatistics()
+    raw_latest.add(CountStatistic("total_raw_messages"))
+    raw_latest.add(CountStatistic("strong_raw_messages", key="rssi", test=lambda v: float(v) > -3.0))
+    raw_latest.add(AverageStatistic("avg_raw_rssi", key="rssi"))
+    raw_latest.add(MaxStatistic("peak_raw_rssi", key="rssi"))
 
-    json_lock = threading.Lock()
-    json_latest = Stats_1min()
-    json_latest.add(Stat("total_accepted_messages", lambda: [0], parse_cnt([["address"]]), get_cnt, aggregate_cnt))
-    json_latest.add(Stat("strong_accepted_messages", lambda: [0], parse_cnt([["metadata", "rssi"]], lambda v: float(v) > -3.0), get_cnt, aggregate_cnt))
-    json_latest.add(Stat("avg_accepted_rssi", lambda: [0, 0], parse_avg([["metadata", "rssi"]]), get_avg, aggregate_avg))
-    json_latest.add(Stat("peak_accepted_rssi", lambda: [None], parse_max([["metadata", "rssi"]]), get_max, aggregate_max))
-    json_latest.add(Stat("total_tracks", set, parse_set([["address"]]), len, aggregate_set))
-    json_latest.add(Stat("airborne_tracks", set, parse_set([["airground_state"]], "airborne"), len, aggregate_set))
-    json_latest.add(Stat("ground_tracks", set, parse_set([["airground_state"]], "ground"), len, aggregate_set))
-    json_latest.add(Stat("supersonic_tracks", set, parse_set([["airground_state"]], "supersonic"), len, aggregate_set))
-    json_latest.add(Stat("adsb_tracks", set, parse_set([["address_qualifier"]], "adsb"), len, aggregate_set))
-    json_latest.add(Stat("tisb_tracks", set, parse_set([["address_qualifier"]], "tisb"), len, aggregate_set))
-    json_latest.add(Stat("vehicle_tracks", set, parse_set([["address_qualifier"]], "vehicle"), len, aggregate_set))
-    json_latest.add(Stat("beacon_tracks", set, parse_set([["address_qualifier"]], "beacon"), len, aggregate_set))
-    json_latest.add(Stat("adsr_tracks", set, parse_set([["address_qualifier"]], "adsr"), len, aggregate_set))
+    json_lock = Lock()
+    json_latest = PeriodStatistics()
+    json_latest.add(CountStatistic("total_accepted_messages"))
+    json_latest.add(CountStatistic("strong_accepted_messages", key=("metadata", "rssi"), test=lambda v: float(v) > -3.0))
+    json_latest.add(AverageStatistic("avg_accepted_rssi", key=("metadata", "rssi")))
+    json_latest.add(MaxStatistic("peak_accepted_rssi", key=("metadata", "rssi")))
+    json_latest.add(UniqueStatistic("total_tracks"))
+    json_latest.add(UniqueStatistic("airborne_tracks", key="airground_state", test="airborne"))
+    json_latest.add(UniqueStatistic("ground_tracks", key="airground_state", test="ground"))
+    json_latest.add(UniqueStatistic("supersonic_tracks", key="airground_state", test="supersonic"))
+    json_latest.add(UniqueStatistic("adsb_tracks", key="address_qualifier", test="adsb"))
+    json_latest.add(UniqueStatistic("tisb_tracks", key="address_qualifier", test="tis"))
+    json_latest.add(UniqueStatistic("vehicle_tracks", key="address_qualifier", test="vehicle"))
+    json_latest.add(UniqueStatistic("beacon_tracks", key="address_qualifier", test="beacon"))
+    json_latest.add(UniqueStatistic("adsr_tracks", key="address_qualifier", test="adsr"))
 
     try:
         origin = (float(environ["LAT"]), float(environ["LON"]))
 
-        max_dist = Stat("max_distance_m", lambda: [0] * 72, parse_range(origin), get_max, aggregate_range)
+        max_dist = RangeStatistic("max_distance_m", origin)
         json_latest.add(max_dist)
         polar_range = deepcopy(max_dist)
     except KeyError:
         polar_range = None
-        LOGW("receiver location not set")
+        warning("receiver location not set")
 
-    threading.Thread(target=parse_raw, args=(fraw, raw_lock, raw_latest)).start()
-    threading.Thread(target=parse_json, args=(fjson, json_lock, json_latest)).start()
+    Thread(target=parse_raw, args=(fraw, raw_lock, raw_latest)).start()
+    Thread(target=parse_json, args=(fjson, json_lock, json_latest)).start()
+
+    history = collections.deque([], 15)
 
     while True:
-        aggregate(raw_lock, raw_latest, json_lock, json_latest, polar_range)
+        aggregate(history, raw_lock, raw_latest, json_lock, json_latest, polar_range)
         time.sleep(60)
 
 
