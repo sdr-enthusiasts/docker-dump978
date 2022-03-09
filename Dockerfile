@@ -63,7 +63,7 @@ RUN set -x && \
     cat /CONTAINER_VERSION
 
 # temporary for debugging
-RUN apt update && apt install nano
+RUN apt-get update && apt-get install nano
 
 # Set s6 init as entrypoint
 ENTRYPOINT [ "/init" ]

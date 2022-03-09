@@ -1,17 +1,5 @@
 #!/usr/bin/with-contenv python3
 
-# pylint: disable=C0103
-# pylint: disable=C0114
-# pylint: disable=C0115
-# pylint: disable=C0116
-# pylint: disable=C0301
-# pylint: disable=E1121
-# pylint: disable=R0902
-# pylint: disable=R0913
-# pylint: disable=R0914
-# pylint: disable=W0603
-# pylint: disable=W0702
-
 import collections
 from copy import deepcopy
 import json
@@ -21,24 +9,27 @@ import socket
 import threading
 import time
 
-################################################################################
+###############################################################################
 # Helper functions for logging
-################################################################################
+###############################################################################
 
 stdout_lock = threading.Lock()
+
 
 def LOGW(msg):
     with stdout_lock:
         print("WARNING: " + str(msg))
+
 
 def LOGD(msg):
     if DEBUG:
         with stdout_lock:
             print("DEBUG: " + str(msg))
 
-################################################################################
+###############################################################################
 # Helper functions to various stat types
-################################################################################
+###############################################################################
+
 
 # Extract a (potentially nested) key or list of keys from a dict
 def extract(msg, keys):
@@ -50,10 +41,11 @@ def extract(msg, keys):
                 val = val[k]
             out.append(val)
         return out
-    except BaseException as e: # pylint: disable=W0703
-        LOGW("exception %s : %s looking for keys %s" %(type(e), str(e), str(keys)))
+    except BaseException as e:
+        LOGW("%s : %s looking for keys %s" % (type(e), str(e), str(keys)))
         LOGW("Offending message JSON : %s" % msg)
         raise e
+
 
 def parse_cnt(keys=None, test=None):
     def wrapper(store, msg):
@@ -63,11 +55,14 @@ def parse_cnt(keys=None, test=None):
                 store[0] += 1
     return wrapper
 
+
 def get_cnt(store):
     return store[0]
 
+
 def aggregate_cnt(old, new):
     old[0] = old[0] + new[0]
+
 
 def parse_range(origin):
     def wrapper(store, msg):
@@ -75,9 +70,11 @@ def parse_range(origin):
         store[brng] = max(store[brng], dist)
     return wrapper
 
+
 def aggregate_range(old, new):
     for i, v in enumerate(old):
         old[i] = max(v, new[i])
+
 
 def parse_max(keys):
     def wrapper(store, msg):
@@ -87,12 +84,14 @@ def parse_max(keys):
                 store[0] = float(val)
             else:
                 store[0] = max(store[0], float(val))
-        except:
+        except BaseException:
             pass
     return wrapper
 
+
 def get_max(store):
     return max(store)
+
 
 def aggregate_max(old, new):
     if new[0] is None:
@@ -102,6 +101,7 @@ def aggregate_max(old, new):
         return
     old[0] = max(old[0], new[0])
 
+
 def parse_avg(keys):
     def wrapper(store, msg):
         val = extract(msg, keys)[0]
@@ -110,14 +110,17 @@ def parse_avg(keys):
             store[1] += 1
     return wrapper
 
+
 def get_avg(store):
     try:
-        return store[0]/store[1]
-    except:
+        return store[0] / store[1]
+    except BaseException:
         return None
 
+
 def aggregate_avg(old, new):
-    old = [x+y for x,y in zip(old, new)]
+    old = [x + y for x, y in zip(old, new)]
+
 
 def parse_set(keys, mask=None):
     def wrapper(store, msg):
@@ -127,12 +130,14 @@ def parse_set(keys, mask=None):
                 store.add(msg["address"])
     return wrapper
 
+
 def aggregate_set(old, new):
     old |= new
 
-################################################################################
+###############################################################################
 # Classes that define individual stats and a collection of stats over a period
-################################################################################
+###############################################################################
+
 
 # Defines a single statistic to extract from decoded JSON messages
 class Stat:
@@ -155,7 +160,8 @@ class Stat:
         return self._get(self._store)
 
     def aggregate(self, new):
-        self._aggregate(self._store, new._store) # pylint: disable=W0212
+        self._aggregate(self._store, new._store)
+
 
 # Defines a collection of statistics to store over a 1 minute period
 class Stats_1min:
@@ -201,9 +207,10 @@ class Stats_1min:
     def __str__(self):
         return json.dumps(self.to_dict())
 
-################################################################################
+###############################################################################
 # Global variables
-################################################################################
+###############################################################################
+
 
 # Set to True to enable debug messages  pass
 DEBUG = True
@@ -211,31 +218,33 @@ DEBUG = True
 # Deque of historical statistics
 history = collections.deque([], 15)
 
-################################################################################
+###############################################################################
 # Functions
-################################################################################
+###############################################################################
+
 
 # meters and angle between two GPS coordinates
 def gps_dist(home, destination):
     lat1, lon1 = home
     lat2, lon2 = destination
-    radius = 6371000 # m
+    radius = 6371000  # m
 
-    dlat = math.radians(lat2-lat1)
-    dlon = math.radians(lon2-lon1)
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
     coslat1 = math.cos(math.radians(lat1))
     coslat2 = math.cos(math.radians(lat2))
     sinlat1 = math.sin(math.radians(lat1))
     sinlat2 = math.sin(math.radians(lat2))
 
-    a = math.sin(dlat/2)**2 + coslat1 * coslat2 * math.sin(dlon/2)**2
-    dist = 2 * radius * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    a = math.sin(dlat / 2)**2 + coslat1 * coslat2 * math.sin(dlon / 2)**2
+    dist = 2 * radius * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
     x = coslat2 * math.sin(dlon)
     y = coslat1 * sinlat2 - sinlat1 * coslat2 * math.cos(dlon)
-    brng = math.degrees(math.atan2(x,y))
+    brng = math.degrees(math.atan2(x, y))
 
-    return round(dist), round(brng/5) % 72
+    return round(dist), round(brng / 5) % 72
+
 
 # Aggregate stats over last 1, 5, and 15 minutes
 # Write the output files
@@ -250,7 +259,7 @@ def aggregate(raw_lock, raw_latest, json_lock, json_latest, polar_range):
 
     last_15min = deepcopy(history[0])
 
-    for i,d in enumerate(history):
+    for i, d in enumerate(history):
         if i == 0:
             continue
         last_15min.aggregate(d)
@@ -274,6 +283,7 @@ def aggregate(raw_lock, raw_latest, json_lock, json_latest, polar_range):
             for b, d in enumerate(polar_range._store):
                 fout.write("polar_range,bearing=%02d range=%d %d\n" % (b, d, time.time_ns()))
 
+
 # Parse decoded JSON messages
 def parse_json(fjson, json_lock, json_latest):
     LOGD("listening for json data")
@@ -281,6 +291,7 @@ def parse_json(fjson, json_lock, json_latest):
     for msg in fjson:
         with json_lock:
             json_latest.parse(json.loads(msg))
+
 
 # Parse raw UAT messages
 # Currently just counts the number of messages
@@ -290,11 +301,12 @@ def parse_raw(fraw, raw_lock, raw_latest):
     for msg in fraw:
         with raw_lock:
             try:
-                rssi_begin = msg.index("rssi=")+5
+                rssi_begin = msg.index("rssi=") + 5
                 rssi_end = rssi_begin + msg[rssi_begin:].index(";")
                 raw_latest.parse({"rssi": float(msg[rssi_begin:rssi_end])})
             except ValueError:
-                LOGW("Did not find RSSI in raw message %s"%msg)
+                LOGW("Did not find RSSI in raw message %s" % msg)
+
 
 def main():
     host = '127.0.0.1'
@@ -317,15 +329,15 @@ def main():
     raw_latest = Stats_1min()
     raw_latest.add(Stat("total_raw_messages", lambda: [0], parse_cnt([["rssi"]]), get_cnt, aggregate_cnt))
     raw_latest.add(Stat("strong_raw_messages", lambda: [0], parse_cnt([["rssi"]], lambda v: float(v) > -3.0), get_cnt, aggregate_cnt))
-    raw_latest.add(Stat("avg_raw_rssi", lambda: [0,0], parse_avg([["rssi"]]), get_avg, aggregate_avg))
+    raw_latest.add(Stat("avg_raw_rssi", lambda: [0, 0], parse_avg([["rssi"]]), get_avg, aggregate_avg))
     raw_latest.add(Stat("peak_raw_rssi", lambda: [None], parse_max([["rssi"]]), get_max, aggregate_max))
 
     json_lock = threading.Lock()
     json_latest = Stats_1min()
     json_latest.add(Stat("total_accepted_messages", lambda: [0], parse_cnt([["address"]]), get_cnt, aggregate_cnt))
     json_latest.add(Stat("strong_accepted_messages", lambda: [0], parse_cnt([["metadata", "rssi"]], lambda v: float(v) > -3.0), get_cnt, aggregate_cnt))
-    json_latest.add(Stat("avg_accepted_rssi", lambda: [0,0], parse_avg([["metadata", "rssi"]]), get_avg, aggregate_avg))
-    json_latest.add(Stat("peak_accepted_rssi", lambda: [None], parse_max([["metadata","rssi"]]), get_max, aggregate_max))
+    json_latest.add(Stat("avg_accepted_rssi", lambda: [0, 0], parse_avg([["metadata", "rssi"]]), get_avg, aggregate_avg))
+    json_latest.add(Stat("peak_accepted_rssi", lambda: [None], parse_max([["metadata", "rssi"]]), get_max, aggregate_max))
     json_latest.add(Stat("total_tracks", set, parse_set([["address"]]), len, aggregate_set))
     json_latest.add(Stat("airborne_tracks", set, parse_set([["airground_state"]], "airborne"), len, aggregate_set))
     json_latest.add(Stat("ground_tracks", set, parse_set([["airground_state"]], "ground"), len, aggregate_set))
@@ -342,7 +354,7 @@ def main():
         max_dist = Stat("max_distance_m", lambda: [0] * 72, parse_range(origin), get_max, aggregate_range)
         json_latest.add(max_dist)
         polar_range = deepcopy(max_dist)
-    except:
+    except KeyError:
         polar_range = None
         LOGW("receiver location not set")
 
@@ -350,8 +362,9 @@ def main():
     threading.Thread(target=parse_json, args=(fjson, json_lock, json_latest)).start()
 
     while True:
-        time.sleep(60)
         aggregate(raw_lock, raw_latest, json_lock, json_latest, polar_range)
+        time.sleep(60)
+
 
 if __name__ == "__main__":
     main()
