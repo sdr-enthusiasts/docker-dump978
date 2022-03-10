@@ -224,7 +224,8 @@ class RangeStatistic(BaseStatistic):
             pos = self.extract(msg, [("position", "lat"), ("position", "lon")])
             dist, brng = self.gps_dist(self._origin, pos)
             bucket = round(brng / 5) % 72
-            self._range[bucket] = max(dist, self._range[bucket])
+            if dist < 1000000:
+                self._range[bucket] = max(dist, self._range[bucket])
         except KeyError:
             pass
 
