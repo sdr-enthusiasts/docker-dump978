@@ -64,7 +64,7 @@ for ((i = 120 ; i > -2 ; i--)); do
 
         # get the number of messages in the file
         NUM_MSGS=$(jq .messages < "$JSONFILE")
-        
+
         # set END_MSGS to most recent number of messages
         END_MSGS="$NUM_MSGS"
 
@@ -83,6 +83,26 @@ else
     echo "received 0 messages from SDR in past 2 hours, NOT OK."
     EXITCODE=1
 fi
+
+##### Service Death Counts #####
+services=('autogain' 'dump978' 'stats' 'telegraf' 'telegraf_socat')
+services+=('uat2esnt' 'uat2json' 'uat2json_rotate')
+# For each service...
+for service in "${services[@]}"; do
+    # Get number of non-zero service exits
+    returnvalue=$(s6-svdt \
+                    -s "/run/s6/services/$service" | \
+                    grep -cv 'exitcode 0')
+    # Reset service death counts
+    s6-svdt-clear "/run/s6/services/$service"
+    # Log healthy/unhealthy and exit abnormally if unhealthy
+    if [[ "$returnvalue" -eq "0" ]]; then
+        echo "abnormal death count for service $service is $returnvalue: HEALTHY"
+    else
+        echo "abnormal death count for service $service is $returnvalue: UNHEALTHY"
+        EXITCODE=1
+    fi
+done
 
 # Exit with determined exit status
 exit "$EXITCODE"

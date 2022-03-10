@@ -12,6 +12,8 @@ INPUT_POLAR_RANGE_DATA="/etc/telegraf/telegraf.d/inputs_polar_range.conf"
 rm "$INPUT_POLAR_RANGE_DATA" > /dev/null 2>&1 || true
 INPUT_STATS_DATA="/etc/telegraf/telegraf.d/inputs_stats.conf"
 rm "$INPUT_STATS_DATA" > /dev/null 2>&1 || true
+INPUT_AUTOGAIN_FILE="/etc/telegraf/telegraf.d/inputs_file_autogain.conf"
+rm "$INPUT_AUTOGAIN_FILE" > /dev/null 2>&1 || true
 
 if [[ -n "$ENABLE_PROMETHEUS" ]]; then
 
@@ -81,6 +83,27 @@ if [[ -n "$LAT" ]] || [[ -n "$LON" ]]; then
     echo "  name_override = \"polar_range\""
     echo "  data_format = \"influx\""
   } > "$INPUT_POLAR_RANGE_DATA"
+
+fi
+
+# If gain is specified...
+if [[ -n "$DUMP978_SDR_GAIN" ]]; then
+
+  # If the user wants to use the autogain system...
+  if [[ "$DUMP978_SDR_GAIN" == "autogain" ]]; then
+
+    ##### TELEGRAF CONFIG - INPUT FROM autogain FILES #####
+    {
+      echo "[[inputs.exec]]"
+      echo "commands = ["
+      echo "  \"bash /scripts/telegraf_input_autogain.sh\","
+      echo "]"
+      echo "interval = \"60s\""
+      echo "name_override = \"autogain\""
+      echo "data_format = \"influx\""
+    } > "$INPUT_AUTOGAIN_FILE"
+
+  fi
 
 fi
 
