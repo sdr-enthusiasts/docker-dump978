@@ -42,7 +42,7 @@ class BaseStatistic(metaclass=ABCMeta):
                     out.append(BaseStatistic.extract(msg, k))
                 return out
         except KeyError as e:
-            warning("Couldn't parse keys %s in JSON message" % str(keys))
+            debug("Couldn't parse keys %s in JSON message" % str(keys))
             debug("%s" % msg)
             raise e
 
@@ -392,7 +392,7 @@ def parse_raw(raw_lock, raw_latest):
                             rssi_end = rssi_begin + msg[rssi_begin:].index(";")
                             raw_latest.parse({"rssi": float(msg[rssi_begin:rssi_end])})
                         except ValueError:
-                            warning("Did not find RSSI in raw message:\n%s" % msg)
+                            debug("Did not find RSSI in raw message:\n%s" % msg)
         except Exception:
             exception("Raw socket thread failed!")
 
