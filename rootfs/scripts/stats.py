@@ -5,7 +5,7 @@ import collections
 from copy import deepcopy
 import json
 import logging
-from logging import info, debug, warning
+from logging import info, warning, exception
 import math
 from os import environ
 import socket
@@ -145,9 +145,37 @@ class MaxStatistic(BaseStatistic):
             self._max = max(self._max, new._max)
 
 
+class MinStatistic(BaseStatistic):
+    """Used for statistics that measure a minimum value over time"""
+
+    def __init__(self, name, key):
+        self._key = key
+        super().__init__(name)
+
+    def initialize(self):
+        self._min = None
+
+    def parse(self, msg):
+        val = float(self.extract(msg, self._key))
+        if self._min is None:
+            self._min = val
+        else:
+            self._min = min(self._min, val)
+
+    def get(self):
+        return self._min
+
+    def aggregate(self, new):
+        if self._min is None:
+            self._min = new._min
+        elif new._min is not None:
+            self._min = min(self._min, new._min)
+
+
 class RangeStatistic(BaseStatistic):
     """Used for statistics that measure maximum range value over time"""
 
+    @staticmethod
     def gps_dist(home, destination):
         """Meters and angle between two coordinates"""
 
@@ -268,20 +296,24 @@ class PeriodStatistics:
 # Functions
 ###############################################################################
 
-def aggregate(history, raw_lock, raw_latest, json_lock, json_latest, polar_range):
+def aggregate(raw_lock, raw_latest, json_lock, json_latest, polar_range):
     """Aggregate stats and write output files"""
 
-    with json_lock:
-        history.appendleft(deepcopy(json_latest))
-        json_latest.initialize()
+    try:
+        with json_lock:
+            aggregate.history.appendleft(deepcopy(json_latest))
+            json_latest.initialize()
+    except AttributeError:
+        aggregate.history = collections.deque([], 15)
+        return
 
     with raw_lock:
-        history[0].aggregate(deepcopy(raw_latest))
+        aggregate.history[0].aggregate(deepcopy(raw_latest))
         raw_latest.initialize()
 
-    last_15min = deepcopy(history[0])
+    last_15min = deepcopy(aggregate.history[0])
 
-    for i, d in enumerate(history):
+    for i, d in enumerate(aggregate.history):
         if i == 0:
             continue
         last_15min.aggregate(d)
@@ -289,10 +321,10 @@ def aggregate(history, raw_lock, raw_latest, json_lock, json_latest, polar_range
             last_5min = deepcopy(last_15min)
     out = dict()
 
-    out["last_1min"] = history[0].to_dict()
-    if len(history) >= 5:
+    out["last_1min"] = aggregate.history[0].to_dict()
+    if len(aggregate.history) >= 5:
         out["last_5min"] = last_5min.to_dict()
-    if len(history) >= 15:
+    if len(aggregate.history) >= 15:
         out["last_15min"] = last_15min.to_dict()
 
     with open("/run/stats/stats.json", "w") as f:
@@ -300,53 +332,54 @@ def aggregate(history, raw_lock, raw_latest, json_lock, json_latest, polar_range
         f.write("\n")
 
     if polar_range is not None:
-        polar_range.aggregate(history[0].get("max_distance_m"))
+        polar_range.aggregate(aggregate.history[0].get("max_distance_m"))
         with open("/run/stats/polar_range.influx", "w") as fout:
             for b, d in enumerate(polar_range._range):
                 fout.write("polar_range,bearing=%02d range=%d %d\n" % (b, d, time.time_ns()))
 
 
-def parse_json(fjson, json_lock, json_latest):
+def parse_json(json_lock, json_latest):
     """Parse decoded JSON messages"""
 
-    debug("listening for json data")
-    for msg in fjson:
-        with json_lock:
-            json_latest.parse(json.loads(msg))
+    while True:
+        try:
+            json_sock = socket.socket()
+            json_sock.connect(("127.0.0.1", 30979))
+            info("connected to dump978 decoded JSON output")
+
+            with json_sock.makefile(buffering=1) as fjson:
+                for msg in fjson:
+                    with json_lock:
+                        json_latest.parse(json.loads(msg))
+        except Exception:
+            exception("JSON socket thread failed!")
 
 
-def parse_raw(fraw, raw_lock, raw_latest):
-
+def parse_raw(raw_lock, raw_latest):
     """Parse raw UAT messages"""
-    debug("listening for raw data")
-    for msg in fraw:
-        with raw_lock:
-            try:
-                rssi_begin = msg.index("rssi=") + 5
-                rssi_end = rssi_begin + msg[rssi_begin:].index(";")
-                raw_latest.parse({"rssi": float(msg[rssi_begin:rssi_end])})
-            except ValueError:
-                warning("Did not find RSSI in raw message:\n%s" % msg)
+
+    while True:
+        try:
+            raw_sock = socket.socket()
+            raw_sock.connect(("127.0.0.1", 30978))
+            info("connected to dump978 raw output")
+
+            with raw_sock.makefile(buffering=1) as fraw:
+                for msg in fraw:
+                    with raw_lock:
+                        try:
+                            rssi_begin = msg.index("rssi=") + 5
+                            rssi_end = rssi_begin + msg[rssi_begin:].index(";")
+                            raw_latest.parse({"rssi": float(msg[rssi_begin:rssi_end])})
+                        except ValueError:
+                            warning("Did not find RSSI in raw message:\n%s" % msg)
+        except Exception:
+            exception("Raw socket thread failed!")
 
 
 def main():
+    # Change the argument to adjust logging output
     logging.disable(logging.NOTSET)
-
-    host = '127.0.0.1'
-    raw_port = 30978
-    json_port = 30979
-
-    raw_sock = socket.socket()
-    raw_sock.connect((host, raw_port))
-    fraw = raw_sock.makefile(buffering=1)
-
-    info("connected to dump978 raw output")
-
-    json_sock = socket.socket()
-    json_sock.connect((host, json_port))
-    fjson = json_sock.makefile(buffering=1)
-
-    info("connected to dump978 JSON output")
 
     raw_lock = Lock()
     raw_latest = PeriodStatistics()
@@ -354,6 +387,7 @@ def main():
     raw_latest.add(CountStatistic("strong_raw_messages", key="rssi", test=lambda v: float(v) > -3.0))
     raw_latest.add(AverageStatistic("avg_raw_rssi", key="rssi"))
     raw_latest.add(MaxStatistic("peak_raw_rssi", key="rssi"))
+    raw_latest.add(MinStatistic("min_raw_rssi", key="rssi"))
 
     json_lock = Lock()
     json_latest = PeriodStatistics()
@@ -361,6 +395,7 @@ def main():
     json_latest.add(CountStatistic("strong_accepted_messages", key=("metadata", "rssi"), test=lambda v: float(v) > -3.0))
     json_latest.add(AverageStatistic("avg_accepted_rssi", key=("metadata", "rssi")))
     json_latest.add(MaxStatistic("peak_accepted_rssi", key=("metadata", "rssi")))
+    json_latest.add(MinStatistic("min_accepted_rssi", key=("metadata", "rssi")))
     json_latest.add(UniqueStatistic("total_tracks"))
     json_latest.add(UniqueStatistic("airborne_tracks", key="airground_state", test="airborne"))
     json_latest.add(UniqueStatistic("ground_tracks", key="airground_state", test="ground"))
@@ -373,7 +408,6 @@ def main():
 
     try:
         origin = (float(environ["LAT"]), float(environ["LON"]))
-
         max_dist = RangeStatistic("max_distance_m", origin)
         json_latest.add(max_dist)
         polar_range = deepcopy(max_dist)
@@ -381,13 +415,11 @@ def main():
         polar_range = None
         warning("receiver location not set")
 
-    Thread(target=parse_raw, args=(fraw, raw_lock, raw_latest)).start()
-    Thread(target=parse_json, args=(fjson, json_lock, json_latest)).start()
-
-    history = collections.deque([], 15)
+    Thread(target=parse_raw, args=(raw_lock, raw_latest)).start()
+    Thread(target=parse_json, args=(json_lock, json_latest)).start()
 
     while True:
-        aggregate(history, raw_lock, raw_latest, json_lock, json_latest, polar_range)
+        aggregate(raw_lock, raw_latest, json_lock, json_latest, polar_range)
         time.sleep(60)
 
 
