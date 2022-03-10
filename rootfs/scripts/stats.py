@@ -5,13 +5,12 @@ import collections
 from copy import deepcopy
 import json
 import logging
-from logging import info, warning, exception
+from logging import info, debug, warning, exception
 import math
 from os import environ
 import socket
 from threading import Lock, Thread
 import time
-from typing import Callable
 
 
 ###############################################################################
@@ -25,6 +24,8 @@ class BaseStatistic(metaclass=ABCMeta):
     def extract(msg, keys):
         """Extract a key, list of keys, nested key, or list of nested keys from a dictionary"""
         try:
+            if keys is None:
+                return msg
             if type(keys) is str:
                 """Single value"""
                 return msg[keys]
@@ -40,8 +41,9 @@ class BaseStatistic(metaclass=ABCMeta):
                 for k in keys:
                     out.append(BaseStatistic.extract(msg, k))
                 return out
-        except Exception as e:
-            warning("Couldn't parse keys %s in JSON message:\n%s" % (keys, msg))
+        except KeyError as e:
+            warning("Couldn't parse keys %s in JSON message" % str(keys))
+            debug("%s" % msg)
             raise e
 
     def __init__(self, name):
@@ -77,8 +79,11 @@ class AverageStatistic(BaseStatistic):
         self._count = 0
 
     def parse(self, msg):
-        self._sum += float(self.extract(msg, self._key))
-        self._count += 1
+        try:
+            self._sum += float(self.extract(msg, self._key))
+            self._count += 1
+        except KeyError:
+            pass
 
     def get(self):
         return None if self._count == 0 else self._sum / self._count
@@ -103,13 +108,16 @@ class CountStatistic(BaseStatistic):
         if self._key is None:
             self._count += 1
         else:
-            val = self.extract(msg, self._key)
-            if self._test is None:
-                self._count += 1
-            elif type(self._test) is str and self._test in val:
-                self._count += 1
-            elif callable(self._test) and self._test(val):
-                self._count += 1
+            try:
+                val = self.extract(msg, self._key)
+                if self._test is None:
+                    self._count += 1
+                elif type(self._test) is str and self._test in val:
+                    self._count += 1
+                elif callable(self._test) and self._test(val):
+                    self._count += 1
+            except KeyError:
+                pass
 
     def get(self):
         return self._count
@@ -129,11 +137,14 @@ class MaxStatistic(BaseStatistic):
         self._max = None
 
     def parse(self, msg):
-        val = float(self.extract(msg, self._key))
-        if self._max is None:
-            self._max = val
-        else:
-            self._max = max(self._max, val)
+        try:
+            val = float(self.extract(msg, self._key))
+            if self._max is None:
+                self._max = val
+            else:
+                self._max = max(self._max, val)
+        except KeyError:
+            pass
 
     def get(self):
         return self._max
@@ -156,11 +167,14 @@ class MinStatistic(BaseStatistic):
         self._min = None
 
     def parse(self, msg):
-        val = float(self.extract(msg, self._key))
-        if self._min is None:
-            self._min = val
-        else:
-            self._min = min(self._min, val)
+        try:
+            val = float(self.extract(msg, self._key))
+            if self._min is None:
+                self._min = val
+            else:
+                self._min = min(self._min, val)
+        except KeyError:
+            pass
 
     def get(self):
         return self._min
@@ -206,10 +220,13 @@ class RangeStatistic(BaseStatistic):
         self._range = [0] * 72
 
     def parse(self, msg):
-        pos = self.extract(msg, [("position", "lat"), ("position", "lon")])
-        dist, brng = self.gps_dist(self._origin, pos)
-        bucket = round(brng / 5) % 72
-        self._range[bucket] = max(dist, self._range[bucket])
+        try:
+            pos = self.extract(msg, [("position", "lat"), ("position", "lon")])
+            dist, brng = self.gps_dist(self._origin, pos)
+            bucket = round(brng / 5) % 72
+            self._range[bucket] = max(dist, self._range[bucket])
+        except KeyError:
+            pass
 
     def get(self):
         return max(self._range)
@@ -231,13 +248,16 @@ class UniqueStatistic(BaseStatistic):
         self._ids = set()
 
     def parse(self, msg):
-        val = self.extract(msg, self._key)
-        if self._test is None:
-            self._ids.add(msg["address"])
-        elif type(self._test) is str and self._test in val:
-            self._ids.add(msg["address"])
-        elif type(self._test) is Callable and self._test(val):
-            self._ids.add(msg["address"])
+        try:
+            val = self.extract(msg, self._key)
+            if self._test is None:
+                self._ids.add(msg["address"])
+            elif type(self._test) is str and self._test in val:
+                self._ids.add(msg["address"])
+            elif callable(self._test) and self._test(val):
+                self._ids.add(msg["address"])
+        except KeyError:
+            pass
 
     def get(self):
         return len(self._ids)
@@ -379,7 +399,7 @@ def parse_raw(raw_lock, raw_latest):
 
 def main():
     # Change the argument to adjust logging output
-    logging.basicConfig(level=logging.NOTSET)
+    logging.basicConfig(level=logging.INFO)
 
     raw_lock = Lock()
     raw_latest = PeriodStatistics()
@@ -397,6 +417,7 @@ def main():
     json_latest.add(MaxStatistic("peak_accepted_rssi", key=("metadata", "rssi")))
     json_latest.add(MinStatistic("min_accepted_rssi", key=("metadata", "rssi")))
     json_latest.add(UniqueStatistic("total_tracks"))
+    json_latest.add(UniqueStatistic("tracks_with_position", test=lambda m: "position" in m))
     json_latest.add(UniqueStatistic("airborne_tracks", key="airground_state", test="airborne"))
     json_latest.add(UniqueStatistic("ground_tracks", key="airground_state", test="ground"))
     json_latest.add(UniqueStatistic("supersonic_tracks", key="airground_state", test="supersonic"))
