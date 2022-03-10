@@ -108,7 +108,7 @@ class CountStatistic(BaseStatistic):
                 self._count += 1
             elif type(self._test) is str and self._test in val:
                 self._count += 1
-            elif type(self._test) is Callable and self._test(val):
+            elif callable(self._test) and self._test(val):
                 self._count += 1
 
     def get(self):
@@ -379,7 +379,7 @@ def parse_raw(raw_lock, raw_latest):
 
 def main():
     # Change the argument to adjust logging output
-    logging.disable(logging.NOTSET)
+    logging.basicConfig(level=logging.NOTSET)
 
     raw_lock = Lock()
     raw_latest = PeriodStatistics()
