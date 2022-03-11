@@ -46,7 +46,7 @@ fi
 
 # Handle "--sdr-gain"
 if [[ -e "$GAIN_VALUE_FILE" ]]; then
-    READSB_CMD+=("--sdr-gain" "$(cat "$GAIN_VALUE_FILE")")
+    DUMP978_CMD+=("--sdr-gain" "$(cat "$GAIN_VALUE_FILE")")
 fi
 
 # Handle "--sdr-ppm"

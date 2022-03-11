@@ -24,6 +24,6 @@ if [[ -n "$DUMP978_SDR_GAIN" ]]; then
         echo "$DUMP978_SDR_GAIN" > "$GAIN_VALUE_FILE"
     fi
 else
-    # Otherwise, use readsb default of "auto gain" (ie: maximum)
-    echo "-10" > "$GAIN_VALUE_FILE"
+    # Otherwise, use default of 49.6 (ie: maximum)
+    echo "49.6" > "$GAIN_VALUE_FILE"
 fi
