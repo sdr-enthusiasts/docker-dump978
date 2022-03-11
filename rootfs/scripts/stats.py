@@ -326,12 +326,14 @@ def aggregate(raw_lock, raw_latest, json_lock, json_latest, polar_range):
             json_latest.initialize()
     except AttributeError:
         aggregate.history = collections.deque([], 15)
+        aggregate.total = PeriodStatistics()
         return
 
     with raw_lock:
         aggregate.history[0].aggregate(deepcopy(raw_latest))
         raw_latest.initialize()
 
+    aggregate.total.aggregate(aggregate.history[0])
     last_15min = deepcopy(aggregate.history[0])
 
     for i, d in enumerate(aggregate.history):
@@ -342,6 +344,7 @@ def aggregate(raw_lock, raw_latest, json_lock, json_latest, polar_range):
             last_5min = deepcopy(last_15min)
     out = dict()
 
+    out["total"] = aggregate.total.to_dict()
     out["last_1min"] = aggregate.history[0].to_dict()
     if len(aggregate.history) >= 5:
         out["last_5min"] = last_5min.to_dict()
@@ -374,6 +377,7 @@ def parse_json(json_lock, json_latest):
                         json_latest.parse(json.loads(msg))
         except Exception:
             exception("JSON socket thread failed!")
+            time.sleep(10)
 
 
 def parse_raw(raw_lock, raw_latest):
@@ -396,6 +400,7 @@ def parse_raw(raw_lock, raw_latest):
                             debug("Did not find RSSI in raw message:\n%s" % msg)
         except Exception:
             exception("Raw socket thread failed!")
+            time.sleep(10)
 
 
 def main():
