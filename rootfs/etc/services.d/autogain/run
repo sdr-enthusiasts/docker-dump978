@@ -21,4 +21,3 @@ if [[ -n "$DUMP978_SDR_GAIN" ]]; then
 else
     sleep 86400
 fi
-

@@ -71,6 +71,7 @@ fi
   echo "  interval = \"60s\""
   echo "  name_override = \"stats\""
   echo "  data_format = \"json\""
+  echo "  json_query = \"last_1min\""
 } > "$INPUT_STATS_DATA"
 
 if [[ -n "$LAT" ]] || [[ -n "$LON" ]]; then
@@ -116,7 +117,7 @@ if [[ -z "$INFLUXDB_SKIP_AIRCRAFT" ]]; then
 
     # Run every fairly often as VRS JSON comes out fast
     echo "interval = \"1s\""
-  
+
     ## URL to listen on
     echo "service_address = \"tcp://127.0.0.1:33979\""
 
