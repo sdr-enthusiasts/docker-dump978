@@ -58,7 +58,7 @@ AUTOGAIN_STATS_TRACKS_NEW_FILE="/run/autogain/autogain_stats.tracks_new"
 AUTOGAIN_INTERVAL_FILE="/run/autogain/autogain_interval"
 # results for init stage
 AUTOGAIN_RESULTS_FILE="/run/autogain/autogain_results"
-# previos stats files - allows stats to persist through container restart 
+# previos stats files - allows stats to persist through container restart
 AUTOGAIN_STATS_PREVIOUS_MAX_DISTANCE_FILE="/run/autogain/autogain_stats_current.max_distance"
 AUTOGAIN_STATS_PREVIOUS_LOCAL_STRONG_MSGS_FILE="/run/autogain/autogain_stats_current.local_strong_msgs"
 AUTOGAIN_STATS_PREVIOUS_LOCAL_ACCEPTED_MSGS_FILE="/run/autogain/autogain_stats_current.local_accepted"
@@ -125,7 +125,7 @@ function increase_review_timestamp() {
     else
         num_seconds=3600
     fi
-    
+
     local new_timestamp
     new_timestamp="$(($(get_current_timestamp) + num_seconds))"
     logger_debug "Setting review timestamp to: $new_timestamp"
@@ -195,84 +195,71 @@ function get_gain_number() {
     logger_debug "Exiting: get_gain_number"
 }
 
-function set_readsb_gain() {
-    # Set readsb gain
+function set_dump978_gain() {
+    # Set dump978 gain
     # $1 = gain figure (a value in gain_levels)
     # -----
-    logger_debug "Entering: set_readsb_gain"
+    logger_debug "Entering: set_dump978_gain"
     # Update gain files
     logger_verbose "Setting gain to $1 dB"
     echo "$1" > "$AUTOGAIN_CURRENT_VALUE_FILE"
     cp "$AUTOGAIN_CURRENT_VALUE_FILE" "$GAIN_VALUE_FILE"
 
-    # Restart readsb (if not testing)
-    logger_verbose "Restarting readsb"
+    # Restart dump978 (if not testing)
+    logger_verbose "Restarting dump978"
     if [[ -z "$AUTOGAIN_TESTING_TIMESTAMP" ]]; then
-        pkill -ef "/usr/local/bin/readsb " > /dev/null 2>&1
+        pkill -ef "/usr/local/bin/dump978-fa " > /dev/null 2>&1
     fi
 
     # Store timestamp gain was updated
     get_current_timestamp > "$AUTOGAIN_CURRENT_TIMESTAMP_FILE"
-    logger_debug "Exiting: set_readsb_gain"
+    logger_debug "Exiting: set_dump978_gain"
 }
 
-function get_readsb_stat() {
-    # Pull a statistic from readsb's stats.pb file
-    # $1 = section ('total', 'latest', 'last_1min', etc - from protobuf .proto)
-    # $2 = key (from latest)
+function get_dump978_stat() {
+    # Pull a statistic from the stats script's stats.json file
+    # $1 = jq filter (e.g. ".total.total_tracks")
     # -----
-    logger_debug "Entering: get_readsb_stat"
-    # Get latest section from protobuf, get line including the key we're after:
-    protoc_output=$(protoc \
-            --proto_path="$READSB_PROTO_PATH" \
-            --decode Statistics \
-            readsb.proto < "$READSB_STATS_PB_FILE" 2> /dev/null | \
-                grep -A 999 --max-count=1 "$1 {" 2> /dev/null | \
-                grep -B 999 --max-count=1 '}' 2> /dev/null | \
-                grep -v '{' 2> /dev/null | \
-                grep -v '}' 2> /dev/null | \
-                tr -d ' ' 2> /dev/null | \
-                grep "$2" 2> /dev/null | \
-                cut -d ':' -f 2 2> /dev/null)
+    logger_debug "Entering: get_dump978_stat"
+    # Use jq to extract a stat from the JSON file
+    jq_output=$(jq "$1" /run/stats/stats.json) > /dev/null
 
-    logger_debug "readsb stat $1:$2 = $protoc_output"
+    logger_debug "dump978 stat $1 = $jq_output"
 
-    if [[ -z "$protoc_output" ]]; then
-        logger_verbose "Error looking up $1:$2 from readsb stats!"
+    if [[ "$jq_output" == "null" ]]; then
+        logger_verbose "Error looking up $1 from dump978 stats!"
         return 1
     fi
 
-    echo "$protoc_output"
-    logger_debug "Exiting: get_readsb_stat"
+    echo "$jq_output"
+    logger_debug "Exiting: get_dump978_stat"
 }
 
 function are_required_stats_available() {
-    # Ensures all required stats are available from readsb's stats.pb
+    # Ensures all required stats are available from the stats script's stats.json file
     # Make sure any required stats are added and this function is called prior to interpreting any results
     # -----
     logger_debug "Entering: are_required_stats_available"
     local stats_used
     stats_used=()
     # don't need to worry about strong signals, if not available we use zero.
-    #stats_used+=("total local_strong_signals")
-    stats_used+=("total local_accepted")
-    stats_used+=("total local_signal")
-    stats_used+=("total local_noise")
-    stats_used+=("total max_distance_in_metres")
-    stats_used+=("total tracks_new")
-    stats_used+=("last_15min local_signal")
-    stats_used+=("last_15min local_noise")
+    #stats_used+=(".total.strong_accepted_messages")
+    stats_used+=(".total.total_accepted_messages")
+    stats_used+=(".total.avg_accepted_rssi")
+    stats_used+=(".total.min_raw_rssi")
+    stats_used+=(".total.max_distance_m")
+    stats_used+=(".total.total_tracks")
+    stats_used+=(".last_15min.avg_accepted_rssi")
+    stats_used+=(".last_15min.min_raw_rssi")
 
     for stat_used in "${stats_used[@]}"; do
 
-        # Word splitting is by design in the commands below, so disable the shellcheck alert
-        #shellcheck disable=SC2086
-        if ! get_readsb_stat $stat_used > /dev/null; then
-            logger_debug "Stat $(echo $stat_used | tr ' ' ':') not yet available."
+        if ! get_dump978_stat "$stat_used" > /dev/null; then
+            logger_debug "Stat $stat_used not yet available."
             return 1
         fi
     done
-    logger_debug "Exiting: are_requird_stats_available"
+    logger_debug "Exiting: are_required_stats_available"
 }
 
 function get_local_strong_signals() {
@@ -281,12 +268,12 @@ function get_local_strong_signals() {
     logger_debug "Entering: get_local_strong_signals"
 
     if [[ -e "$AUTOGAIN_STATS_OFFSET_TOTAL_STRONG_MSGS_FILE" ]]; then
-        local_strong_signals="$(get_readsb_stat total local_strong_signals)"
+        local_strong_signals="$(get_dump978_stat .total.strong_accepted_messages)"
         AUTOGAIN_STATS_OFFSET_TOTAL_STRONG_MSGS=$(cat "$AUTOGAIN_STATS_OFFSET_TOTAL_STRONG_MSGS_FILE")
         bc_expression="scale=4; ${local_strong_signals:-0} + ${AUTOGAIN_STATS_OFFSET_TOTAL_STRONG_MSGS:-0}"
         local_strong_signals=$(echo "$bc_expression" | bc)
     else
-        local_strong_signals="$(get_readsb_stat total local_strong_signals)"
+        local_strong_signals="$(get_dump978_stat .total.strong_accepted_messages)"
     fi
 
     logger_debug "local_strong_signals: ${local_strong_signals:-0}"
@@ -318,7 +305,7 @@ function get_tracks_new() {
     # -----
     logger_debug "Entering: get_tracks_new"
     local tracks_new
-    if ! tracks_new=$(get_readsb_stat total tracks_new); then
+    if ! tracks_new=$(get_dump978_stat .total.total_tracks); then
         logger_debug "No 'tracks_new' measurement! Setting to 0."
         tracks_new=0
     fi
@@ -354,7 +341,7 @@ function get_local_signal() {
         local_signal=$(echo "$bc_expression" | bc -l)
 
     else
-        local_signal="$(get_readsb_stat total local_signal)"
+        local_signal="$(get_dump978_stat .total.avg_accepted_rssi)"
     fi
 
     logger_debug "local_signal: $local_signal"
@@ -383,7 +370,7 @@ function get_local_noise() {
         local_noise=$(echo "$bc_expression" | bc -l)
 
     else
-        local_noise="$(get_readsb_stat total local_noise)"
+        local_noise="$(get_dump978_stat .total.min_raw_rssi)"
     fi
 
     logger_debug "local_noise: $local_noise"
@@ -413,10 +400,10 @@ function get_local_accepted () {
 
     if [[ -e "$AUTOGAIN_STATS_OFFSET_TOTAL_ACCEPTED_MSGS_FILE" ]]; then
         AUTOGAIN_STATS_OFFSET_TOTAL_ACCEPTED_MSGS=$(cat "$AUTOGAIN_STATS_OFFSET_TOTAL_ACCEPTED_MSGS_FILE")
-        bc_expression="scale=4; $(get_readsb_stat total local_accepted) + ${AUTOGAIN_STATS_OFFSET_TOTAL_ACCEPTED_MSGS:-0}"
+        bc_expression="scale=4; $(get_dump978_stat .total.total_accepted_messages) + ${AUTOGAIN_STATS_OFFSET_TOTAL_ACCEPTED_MSGS:-0}"
         local_accepted=$(echo "$bc_expression" | bc -l)
     else
-        local_accepted="$(get_readsb_stat total local_accepted)"
+        local_accepted="$(get_dump978_stat .total.total_accepted_messages)"
     fi
 
     logger_debug "local_accepted: $local_accepted"
@@ -428,7 +415,7 @@ function get_local_accepted () {
 function get_max_distance_in_metres () {
     logger_debug "Entering: get_max_distance_in_metres"
 
-    max_distance_in_metres="$(get_readsb_stat total max_distance_in_metres)"
+    max_distance_in_metres="$(get_dump978_stat .total.max_distance_m)"
 
     if [[ -e "$AUTOGAIN_STATS_OFFSET_MAX_DISTANCE_FILE" ]]; then
         AUTOGAIN_STATS_OFFSET_MAX_DISTANCE=$(cat "$AUTOGAIN_STATS_OFFSET_MAX_DISTANCE_FILE")
@@ -456,7 +443,7 @@ function reduce_gain() {
         gain_number=0
     fi
     logger "Reducing gain to: ${gain_levels[$gain_number]} dB"
-    set_readsb_gain "${gain_levels[$gain_number]}"
+    set_dump978_gain "${gain_levels[$gain_number]}"
     logger_debug "Exiting: reduce_gain"
 }
 
@@ -506,7 +493,7 @@ function autogain_change_into_state () {
     # $1 = state name (init)
     # $2 = seconds until next check
     # -----
-    
+
     # Set state to $1 (state name)
     echo "$1" > "$AUTOGAIN_STATE_FILE"
     logger "Entering auto-gain stage: $1"
@@ -539,18 +526,18 @@ function autogain_change_into_state () {
         # We should already be at max gain, check to make sure (maybe user wants to re-run autogain from scratch)
         if [[ $(cat "$AUTOGAIN_CURRENT_VALUE_FILE") == $(cat "$AUTOGAIN_MAX_GAIN_VALUE_FILE") ]]; then
             logger_debug "Gain set to: $(cat "$AUTOGAIN_CURRENT_VALUE_FILE") dB"
-        
+
         # If not at max gain, we should be, so set it
         else
             logger_debug "Setting gain to maximum $(cat "$AUTOGAIN_MAX_GAIN_VALUE_FILE") dB"
-            set_readsb_gain "$(cat "$AUTOGAIN_MAX_GAIN_VALUE_FILE")"
+            set_dump978_gain "$(cat "$AUTOGAIN_MAX_GAIN_VALUE_FILE")"
         fi
     fi
     logger_debug "Exiting: autogain_change_into_state"
 }
 
 function update_stats_files () {
-    # Gather statistics from readsb into stats files
+    # Gather statistics from dump978 into stats files
     # -----
 
     logger_debug "Entering: update_stats_files"
@@ -571,11 +558,11 @@ function update_stats_files () {
     # number of tracks_new
     echo "$current_gain_setting $(get_tracks_new)" >> "$AUTOGAIN_STATS_TRACKS_NEW_FILE"
 
-    logger_debug "Exiting: update_stats_files"   
+    logger_debug "Exiting: update_stats_files"
 }
 
 function store_current_counters () {
-    # Store statistics from readsb into stats files for use if container is restarted
+    # Store statistics from dump978 into stats files for use if container is restarted
     # -----
 
     logger_debug "Entering: store_current_counters"
@@ -586,7 +573,7 @@ function store_current_counters () {
 
         # longest range (max_distance_in_metres)
         get_max_distance_in_metres > "$AUTOGAIN_STATS_PREVIOUS_MAX_DISTANCE_FILE"
-        
+
         # percentage strong messages (local_strong_signals/local_samples_processed)
         get_local_strong_signals > "$AUTOGAIN_STATS_PREVIOUS_LOCAL_STRONG_MSGS_FILE"
 
@@ -594,10 +581,10 @@ function store_current_counters () {
         get_local_accepted > "$AUTOGAIN_STATS_PREVIOUS_LOCAL_ACCEPTED_MSGS_FILE"
 
         # local_signal
-        get_readsb_stat last_15min local_signal >> "$AUTOGAIN_STATS_PREVIOUS_LOCAL_SIGNAL_FILE"
+        get_dump978_stat .last_15min.avg_accepted_rssi >> "$AUTOGAIN_STATS_PREVIOUS_LOCAL_SIGNAL_FILE"
 
         # local_noise
-        get_readsb_stat last_15min local_noise >> "$AUTOGAIN_STATS_PREVIOUS_LOCAL_NOISE_FILE"
+        get_dump978_stat .last_15min.min_raw_rssi >> "$AUTOGAIN_STATS_PREVIOUS_LOCAL_NOISE_FILE"
 
         # number of tracks_new
         get_tracks_new > "$AUTOGAIN_STATS_PREVIOUS_TRACKS_NEW_FILE"
@@ -607,7 +594,7 @@ function store_current_counters () {
 
     fi
 
-    logger_debug "Exiting: store_current_counters"   
+    logger_debug "Exiting: store_current_counters"
 }
 
 function update_offsets_after_container_restart () {
@@ -615,7 +602,7 @@ function update_offsets_after_container_restart () {
     # -----
 
     logger_debug "Entering: update_offsets_after_container_restart"
-    
+
     # update offset files
     if [[ -e "$AUTOGAIN_STATS_PREVIOUS_MAX_DISTANCE_FILE" ]]; then
         cp "$AUTOGAIN_STATS_PREVIOUS_MAX_DISTANCE_FILE" "$AUTOGAIN_STATS_OFFSET_MAX_DISTANCE_FILE"
@@ -641,7 +628,7 @@ function update_offsets_after_container_restart () {
 function rank_gain_levels () {
     # Ranks the gain levels to determine a suitable range
     # -----
-    
+
     logger_debug "Entering: rank_gain_levels"
 
     # Prepare gain_rank dictionary with all tested gain levels
@@ -754,7 +741,7 @@ function adjust_minimum_gain_if_required() {
             # Gain levels in this block are above max strong messages
             count_below_min=0
             logger_debug "adjust_minimum_gain_if_required: Found gain level with % strong messages above max at gain level $gain_level dB"
-        fi                            
+        fi
     done < "$AUTOGAIN_STATS_PERCENT_STRONG_MSGS_FILE"
     # If we've seen two consecutive "below minimums" after the "good" region, we've most likely gone past the "good" region.
     # Bring up the minimum gain
@@ -802,7 +789,7 @@ function adjust_maximum_gain_if_required() {
             # Gain levels in this block are above max strong messages
             count_above_max=0
             logger_debug "adjust_maximum_gain_if_required: Found gain level with % strong messages below min at gain level $gain_level dB"
-        fi                            
+        fi
     done < "$AUTOGAIN_STATS_PERCENT_STRONG_MSGS_FILE"
     # Put order of the file back to normal
     sort -n -r -o "$AUTOGAIN_STATS_PERCENT_STRONG_MSGS_FILE" "$AUTOGAIN_STATS_PERCENT_STRONG_MSGS_FILE"
@@ -833,7 +820,7 @@ function autogain_finish_gainlevel_init() {
     # $1 = set to anything to go to the next gain level if needed
     # -----
     logger_debug "Entering: autogain_finish_state_init"
-    # Set review time 
+    # Set review time
     increase_review_timestamp
 
     # Gather statistics for the current gain level
@@ -850,7 +837,7 @@ function autogain_finish_gainlevel_init() {
         best_gain=$(rank_gain_levels)
 
         # Inform user
-        logger "Auto-gain stage '$(cat "$AUTOGAIN_STATE_FILE")' complete. Best gain figure appears to be: $best_gain dB."                            
+        logger "Auto-gain stage '$(cat "$AUTOGAIN_STATE_FILE")' complete. Best gain figure appears to be: $best_gain dB."
 
         # Block below commented out, as max & min gains should be set via adjust_minimum_gain_if_required/adjust_maximum_gain_if_required
         #
@@ -886,9 +873,9 @@ function autogain_finish_gainlevel_init() {
 
 function autogain_finish_gainlevel_finetune() {
     # $1 = set to anything to go to the next gain level if needed
-    # -----    
+    # -----
     logger_debug "Entering: autogain_finish_state_finetune"
-    # Set review time 
+    # Set review time
     increase_review_timestamp
 
     # Gather statistics for the current gain level
@@ -905,11 +892,11 @@ function autogain_finish_gainlevel_finetune() {
         best_gain=$(rank_gain_levels)
 
         # Inform user
-        logger "Auto-gain stage '$(cat "$AUTOGAIN_STATE_FILE")' complete. Best gain figure appears to be: $best_gain dB."                            
+        logger "Auto-gain stage '$(cat "$AUTOGAIN_STATE_FILE")' complete. Best gain figure appears to be: $best_gain dB."
 
         # Switch to best gain
-        set_readsb_gain "$best_gain"
-        
+        set_dump978_gain "$best_gain"
+
         # Store original stats files for later review
         archive_stats_files
 
@@ -921,7 +908,7 @@ function autogain_finish_gainlevel_finetune() {
         # echo "$best_gain" > "$AUTOGAIN_MAX_GAIN_VALUE_FILE" # we can leave the max/min, finish doesn't use these
         # echo "$best_gain" > "$AUTOGAIN_MIN_GAIN_VALUE_FILE" # we can leave the max/min, finish doesn't use these
         autogain_change_into_state finished "$AUTOGAIN_FINISHED_PERIOD"
-    
+
     # otherwise, reduce gain if required
     else
         if [[ -n "$1" ]]; then
@@ -935,7 +922,7 @@ function autogain_finish_gainlevel_finetune() {
 ##### MAIN SCRIPT #####
 
 # If the user wants to use the autogain system...
-if [[ "$READSB_GAIN" == "autogain" ]]; then
+if [[ "$DUMP978_SDR_GAIN" == "autogain" ]]; then
 
     # If autogain is requested, but there is no state file, then initialise everything
     if [[ ! -e "$AUTOGAIN_STATE_FILE" ]]; then
@@ -956,13 +943,13 @@ if [[ "$READSB_GAIN" == "autogain" ]]; then
         # If the container has been restarted, but we were previously running autogain
         # Re-start from current state/gain
         logger "Container restart detected, resuming auto-gain state '$(cat "$AUTOGAIN_STATE_FILE")' with gain $(cat "$AUTOGAIN_CURRENT_VALUE_FILE") dB"
-        
+
         # Update offsets from before container restarted
         update_offsets_after_container_restart
 
         # Create running file so we can tell if the container has been restarted and we need to resume a previous run...
         touch "$AUTOGAIN_RUNNING_FILE"
-        
+
         if [[ ! "$(cat "$AUTOGAIN_STATE_FILE")" == "finished" ]]; then
             increase_review_timestamp_after_container_restart
         fi
@@ -984,35 +971,35 @@ if [[ "$READSB_GAIN" == "autogain" ]]; then
                     # If stats we require aren't yet available, extend runtime.
                     if ! are_required_stats_available; then
                         logger "Insufficient data available, extending runtime of gain $(cat "$AUTOGAIN_CURRENT_VALUE_FILE") dB."
-                        # Set review time 
+                        # Set review time
                         increase_review_timestamp
-                    
+
                     # If stats we require are available, then process.
                     else
 
                         # Make sure we've received at least 500000 accepted messages:
                         if ! sufficient_local_accepted "$AUTOGAIN_INITIAL_MSGS_ACCEPTED"; then
                             logger "Insufficient messages received for accurate measurement, extending runtime of gain $(cat "$AUTOGAIN_CURRENT_VALUE_FILE") dB."
-                            
-                            # Set review time 
+
+                            # Set review time
                             increase_review_timestamp
 
                             # Limit number of retries to 24 hours
                             if [[ "$(get_current_timestamp)" -gt "$(($(cat "$AUTOGAIN_CURRENT_TIMESTAMP_FILE") + 86400))" ]]; then
-                                
+
                                 # Finish init state
                                 autogain_finish_gainlevel_init
 
                             fi
-                        
+
                         else
 
                             # Finish init state or reduce gain
                             autogain_finish_gainlevel_init reduce
-                            
+
                         fi
                     fi
-                    
+
                 # otherwise, do nothing
                 else
                     #logger_verbose "Not time to do anything yet..."
@@ -1033,7 +1020,7 @@ if [[ "$READSB_GAIN" == "autogain" ]]; then
                     # If stats we require aren't yet available, extend runtime.
                     if ! are_required_stats_available; then
                         logger "Insufficient data available, extending runtime of gain $(cat "$AUTOGAIN_CURRENT_VALUE_FILE") dB."
-                        # Set review time 
+                        # Set review time
                         increase_review_timestamp
 
                     # If stats we require are available, then process.
@@ -1042,8 +1029,8 @@ if [[ "$READSB_GAIN" == "autogain" ]]; then
                         # Make sure we've received at least 500000 accepted messages:
                         if ! sufficient_local_accepted "$AUTOGAIN_FINETUNE_MSGS_ACCEPTED"; then
                             logger "Insufficient messages received for accurate measurement, extending runtime of gain $(cat "$AUTOGAIN_CURRENT_VALUE_FILE") dB."
-                            
-                            # Set review time 
+
+                            # Set review time
                             increase_review_timestamp
 
                             # Limit number of retries to 2 days
@@ -1054,13 +1041,13 @@ if [[ "$READSB_GAIN" == "autogain" ]]; then
 
                             fi
                         else
-                                                
+
                             # Finish finetune state
                             autogain_finish_gainlevel_finetune reduce
-                            
+
                         fi
                     fi
-                    
+
                 # otherwise, do nothing
                 else
                     #logger_verbose "Not time to do anything yet..."
