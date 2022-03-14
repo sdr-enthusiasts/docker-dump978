@@ -45,8 +45,8 @@ if [[ -n "$DUMP978_SDR_AGC" ]]; then
 fi
 
 # Handle "--sdr-gain"
-if [[ -n "$DUMP978_SDR_GAIN" ]]; then
-    DUMP978_CMD+=("--sdr-gain" "$DUMP978_SDR_GAIN")
+if [[ -e "$GAIN_VALUE_FILE" ]]; then
+    DUMP978_CMD+=("--sdr-gain" "$(cat "$GAIN_VALUE_FILE")")
 fi
 
 # Handle "--sdr-ppm"

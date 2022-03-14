@@ -8,5 +8,5 @@ sleep 5
 # shellcheck disable=SC2016
 socat -u "TCP:127.0.0.1:30978" STDOUT | \
 uat2esnt | \
-socat -d -d -u STDIN "TCP-LISTEN:37981,fork" \
+nc -lkp 37981 \
 2>&1 | stdbuf -o0 sed --unbuffered '/^$/d' | stdbuf -o0 awk '{print "[uat2esnt] " strftime("%Y/%m/%d %H:%M:%S", systime()) " " $0}'
