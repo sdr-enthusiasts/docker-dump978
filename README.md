@@ -25,9 +25,7 @@ The container listens on the following TCP ports:
 
 | Path (inside container) | Details |
 |-------------------------|---------|
-| `/run/readsb` | `readsb` protobuf file storage. Not necessarily required to be mapped to persistant storage. |
-| `/run/collectd` | `collectd` RRD file storage used by `readsb`'s "performance graphs" in the web interface. Map to persistant storage if you use this feature. |
-| `/run/autogain` | Map this to persistant storage if you set `READSB_GAIN=autogain` |
+| `/run/autogain` | Map this to persistant storage if you set `DUMP978_SDR_GAIN=autogain` |
 
 ## Up and Running - `docker run`
 
