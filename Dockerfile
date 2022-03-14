@@ -84,8 +84,8 @@ RUN set -x && \
     cp -v ./uat2esnt /usr/local/bin/ && \
     cp -v ./uat2json /usr/local/bin/ && \
     cp -v ./extract_nexrad /usr/local/bin/ && \
-    popd && \
     mkdir -p /run/uat2json && \
+    popd && \
     mkdir -p /run/stats && \
     mkdir -p /run/autogain && \
     mkdir -p /etc/telegraf/telegraf.d && \
@@ -101,8 +101,8 @@ RUN set -x && \
     cat /VERSIONS && \
     cat /CONTAINER_VERSION
 
-# temporary for debugging
-RUN apt-get update && apt-get install nano
+# Copy rootfs
+COPY rootfs/ /
 
 # Set s6 init as entrypoint
 ENTRYPOINT [ "/init" ]
@@ -116,6 +116,3 @@ HEALTHCHECK --timeout=60s --start-period=7200s --interval=600s CMD /scripts/heal
 
 # TODO
 #  - work out a way to test - maybe capture some output and parse it?
-
-# Copy rootfs
-COPY rootfs/ /
