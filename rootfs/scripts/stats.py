@@ -224,7 +224,7 @@ class RangeStatistic(BaseStatistic):
             pos = self.extract(msg, [("position", "lat"), ("position", "lon")])
             dist, brng = self.gps_dist(self._origin, pos)
             bucket = round(brng / 5) % 72
-            if dist < 1000000:
+            if "tisb" not in msg["address_qualifier"] and "adsr" not in msg["address_qualifier"] and dist < 1000000:
                 self._range[bucket] = max(dist, self._range[bucket])
         except KeyError:
             pass
@@ -342,10 +342,11 @@ def aggregate(raw_lock, raw_latest, json_lock, json_latest, polar_range):
         last_15min.aggregate(d)
         if i == 4:
             last_5min = deepcopy(last_15min)
-    out = dict()
 
+    out = dict()
     out["total"] = aggregate.total.to_dict()
     out["last_1min"] = aggregate.history[0].to_dict()
+
     if len(aggregate.history) >= 5:
         out["last_5min"] = last_5min.to_dict()
     if len(aggregate.history) >= 15:
@@ -423,12 +424,12 @@ def main():
     json_latest.add(MaxStatistic("peak_accepted_rssi", key=("metadata", "rssi")))
     json_latest.add(MinStatistic("min_accepted_rssi", key=("metadata", "rssi")))
     json_latest.add(UniqueStatistic("total_tracks"))
-    json_latest.add(UniqueStatistic("tracks_with_position", test=lambda m: "position" in m))
+    json_latest.add(UniqueStatistic("tracks_with_position", key="position"))
     json_latest.add(UniqueStatistic("airborne_tracks", key="airground_state", test="airborne"))
     json_latest.add(UniqueStatistic("ground_tracks", key="airground_state", test="ground"))
     json_latest.add(UniqueStatistic("supersonic_tracks", key="airground_state", test="supersonic"))
     json_latest.add(UniqueStatistic("adsb_tracks", key="address_qualifier", test="adsb"))
-    json_latest.add(UniqueStatistic("tisb_tracks", key="address_qualifier", test="tis"))
+    json_latest.add(UniqueStatistic("tisb_tracks", key="address_qualifier", test="tisb"))
     json_latest.add(UniqueStatistic("vehicle_tracks", key="address_qualifier", test="vehicle"))
     json_latest.add(UniqueStatistic("beacon_tracks", key="address_qualifier", test="beacon"))
     json_latest.add(UniqueStatistic("adsr_tracks", key="address_qualifier", test="adsr"))
