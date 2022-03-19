@@ -209,6 +209,7 @@ function set_dump978_gain() {
     logger_verbose "Restarting dump978"
     if [[ -z "$AUTOGAIN_TESTING_TIMESTAMP" ]]; then
         pkill -ef "/usr/local/bin/dump978-fa " > /dev/null 2>&1
+        pkill -ef "/scripts/stats.py" > /dev/null 2>&1
     fi
 
     # Store timestamp gain was updated

@@ -27,11 +27,11 @@ ENV PROMETHEUSPORT=9273 \
     # The number of seconds that autogain "init" stage should run for, for each gain level
     AUTOGAIN_INITIAL_PERIOD=7200 \
     # The minimum number of local_accepted messages that autogain "init" stage should run for, for each gain level
-    AUTOGAIN_INITIAL_MSGS_ACCEPTED=1000000 \
+    AUTOGAIN_INITIAL_MSGS_ACCEPTED=100000 \
     # The number of seconds that autogain "finetune" stage should run for, for each gain level
     AUTOGAIN_FINETUNE_PERIOD=604800 \
     # The minimum number of local_accepted messages that autogain "finetune" stage should run for, for each gain level
-    AUTOGAIN_FINETUNE_MSGS_ACCEPTED=7000000 \
+    AUTOGAIN_FINETUNE_MSGS_ACCEPTED=700000 \
     # How long to run once finetune stage has finished before we start the process over (1 year)
     AUTOGAIN_FINISHED_PERIOD=31536000 \
     # Maximum gain level that autogain should use
