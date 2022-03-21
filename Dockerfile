@@ -96,10 +96,11 @@ RUN set -x && \
     # Write versions
     telegraf --version > /VERSIONS  && \
     ( dump978-fa --version > /VERSIONS 2>&1 || true ) && \
-    grep dump978 /VERSIONS | cut -d ' ' -f2 >> /CONTAINER_VERSION && \
+    IMAGE_VERSION=$(grep dump978 /VERSIONS | cut -d ' ' -f2) && \
+    echo "${IMAGE_VERSION::7}" > /IMAGE_VERSION && \
     # Print versions
     cat /VERSIONS && \
-    cat /CONTAINER_VERSION
+    cat /IMAGE_VERSION
 
 # Copy rootfs
 COPY rootfs/ /
