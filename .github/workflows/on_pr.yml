@@ -58,7 +58,8 @@ jobs:
         with:
           ignore: "E501"
 
-  build:
+  test-build:
+    name: Test
     uses: sdr-enthusiasts/common-github-workflows/.github/workflows/build_and_push_image.yml@main
     with:
       push_enabled: false
