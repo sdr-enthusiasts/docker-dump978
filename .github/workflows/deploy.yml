@@ -10,7 +10,10 @@ on:
   push:
     branches:
       - main
-      # TEMPORARILY ADDED FOR TESTING
+
+  # TEMPORARILY ADDED FOR TESTING
+  pull_request:
+    branches:
       - issue_42
 
     # Don't trigger if it's just a documentation update
