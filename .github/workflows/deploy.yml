@@ -38,7 +38,8 @@ jobs:
         run: |
           echo "Workflow dispatch reason: $INPUTS_REASON"
 
-  build_and_push:
+  deploy:
+    name: Deploy
     uses: sdr-enthusiasts/common-github-workflows/.github/workflows/build_and_push_image.yml@main
     with:
       push_enabled: true
