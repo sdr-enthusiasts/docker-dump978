@@ -79,7 +79,7 @@ jobs:
 
       # Log into ghcr.io
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1 
+        uses: docker/login-action@v1
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
