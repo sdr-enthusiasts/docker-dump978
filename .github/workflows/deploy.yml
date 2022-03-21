@@ -97,14 +97,16 @@ jobs:
 
       # Get version from "latest"
       - name: Get latest image version
+        id: get-image-version
         run: |
-          docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest"
-          echo "VERSION_TAG=$(docker run --rm --entrypoint cat "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest" /CONTAINER_VERSION)" >> $GITHUB_ENV
+          docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}"
+          VERSION_TAG="$(docker run --rm --entrypoint cat \"${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}\" /CONTAINER_VERSION)"
+          echo "::set-output name=imageversion::$VERSION_TAG"
 
       # Show version from "latest"
       - name: Show latest image version
         run: |
-          echo "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest contains version: ${{ env.VERSION_TAG }}"
+          echo "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest contains version: ${{ steps.get-image-version.outputs.imageversion }}"
 
       # Build version specific
       - name: Build & Push - version specific
@@ -115,7 +117,7 @@ jobs:
           no-cache: false
           platforms: linux/amd64,linux/arm/v7,linux/arm64
           push: true
-          tags: ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:${{ env.VERSION_TAG }}
+          tags: ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:${{ steps.get-image-version.outputs.imageversion }}
 
       # Patch dockerfile to remove healthcheck
       - name: Patch Dockerfile to remove healthcheck
@@ -141,7 +143,7 @@ jobs:
           no-cache: false
           platforms: linux/amd64,linux/arm/v7,linux/arm64
           push: true
-          tags: ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:${{ env.VERSION_TAG }}_nohealthcheck
+          tags: ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:${{ steps.get-image-version.outputs.imageversion }}_nohealthcheck
 
   deploy_dockerhub_single_arch:
     name: Deploy Docker Hub
@@ -180,13 +182,15 @@ jobs:
 
       # Get archictecture suffix
       - name: Get image architecture suffix
+        id: get-arch-suffix
         run: |
-          echo "ARCH_TAG=$(echo '${{ matrix.docker-platform }}' | cut -d '/' -f2- | tr -s '/' '_')" >> $GITHUB_ENV
+          ARCH_SUFFIX="$(echo '${{ matrix.docker-platform }}' | cut -d '/' -f2- | tr -s '/' '_')"
+          echo "::set-output name=archsuffix::$ARCH_SUFFIX"
 
       # Show archictecture suffix
       - name: Show image architecture suffix
         run: |
-          echo "Architecture suffix: ${{ env.ARCH_TAG }}"
+          echo "Architecture suffix: ${{ steps.get-arch-suffix.outputs.archsuffix }}""
 
       # Build "latest"
       - name: Build & Push - latest
@@ -197,18 +201,20 @@ jobs:
           no-cache: true
           platforms: ${{ matrix.docker-platform }}
           push: true
-          tags: ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ env.ARCH_TAG }}
+          tags: ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}
 
       # Get version from "latest"
       - name: Get latest image version
+        id: get-image-version
         run: |
-          docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ env.ARCH_TAG }}"
-          echo "VERSION_TAG=$(docker run --rm --entrypoint cat "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ env.ARCH_TAG }}" /CONTAINER_VERSION)" >> $GITHUB_ENV
+          docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}"
+          VERSION_TAG="$(docker run --rm --entrypoint cat \"${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}\" /CONTAINER_VERSION)"
+          echo "::set-output name=imageversion::$VERSION_TAG"
 
       # Show version from "latest"
       - name: Show latest image version
         run: |
-          echo "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest contains version: ${{ env.VERSION_TAG }}"
+          echo "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest contains version: ${{ steps.get-image-version.outputs.imageversion }}"
 
       # Build version specific
       - name: Build & Push - version specific
@@ -219,7 +225,7 @@ jobs:
           no-cache: false
           platforms: ${{ matrix.docker-platform }}
           push: true
-          tags: ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:${{ env.VERSION_TAG }}_${{ env.ARCH_TAG }}
+          tags: ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:${{ steps.get-image-version.outputs.imageversion }}_${{ steps.get-arch-suffix.outputs.archsuffix }}
 
       # Patch dockerfile to remove healthcheck
       - name: Patch Dockerfile to remove healthcheck
@@ -234,7 +240,7 @@ jobs:
           no-cache: false
           platforms: ${{ matrix.docker-platform }}
           push: true
-          tags: ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_nohealthcheck_${{ env.ARCH_TAG }}
+          tags: ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_nohealthcheck_${{ steps.get-arch-suffix.outputs.archsuffix }}
 
       # Build version specific _nohealthcheck
       - name: Build & Push - version specific nohealthcheck
@@ -245,7 +251,7 @@ jobs:
           no-cache: false
           platforms: ${{ matrix.docker-platform }}
           push: true
-          tags: ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:${{ env.VERSION_TAG }}_nohealthcheck_${{ env.ARCH_TAG }}
+          tags: ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:${{ steps.get-image-version.outputs.imageversion }}_nohealthcheck_${{ steps.get-arch-suffix.outputs.archsuffix }}
 
   deploy_ghcr_multiarch:
     name: Deploy ghcr.io (Multi-Arch)
@@ -297,14 +303,16 @@ jobs:
 
       # Get version from "latest"
       - name: Get latest image version
+        id: get-image-version
         run: |
-          docker pull "ghcr.io/${{ env.GHCR_IMAGE }}:latest"
-          echo "VERSION_TAG=$(docker run --rm --entrypoint cat "ghcr.io/${{ env.GHCR_IMAGE }}:latest" /CONTAINER_VERSION)" >> $GITHUB_ENV
+          docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}"
+          VERSION_TAG="$(docker run --rm --entrypoint cat \"${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}\" /CONTAINER_VERSION)"
+          echo "::set-output name=imageversion::$VERSION_TAG"
 
       # Show version from "latest"
       - name: Show latest image version
         run: |
-          echo "ghcr.io/${{ env.GHCR_IMAGE }}:latest contains version: ${{ env.VERSION_TAG }}"
+          echo "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest contains version: ${{ steps.get-image-version.outputs.imageversion }}"
 
       # Build version specific
       - name: Build & Push - version specific
@@ -315,7 +323,7 @@ jobs:
           no-cache: false
           platforms: linux/amd64,linux/arm/v7,linux/arm64
           push: true
-          tags: ghcr.io/${{ env.GHCR_IMAGE }}:${{ env.VERSION_TAG }}
+          tags: ghcr.io/${{ env.GHCR_IMAGE }}:${{ steps.get-image-version.outputs.imageversion }}
           labels: ${{ steps.meta.outputs.labels }}
 
       # Patch dockerfile to remove healthcheck
@@ -343,7 +351,7 @@ jobs:
           no-cache: false
           platforms: linux/amd64,linux/arm/v7,linux/arm64
           push: true
-          tags: ghcr.io/${{ env.GHCR_IMAGE }}:${{ env.VERSION_TAG }}_nohealthcheck
+          tags: ghcr.io/${{ env.GHCR_IMAGE }}:${{ steps.get-image-version.outputs.imageversion }}_nohealthcheck
           labels: ${{ steps.meta.outputs.labels }}
 
   deploy_ghrc_single_arch:
@@ -391,13 +399,15 @@ jobs:
 
       # Get archictecture suffix
       - name: Get image architecture suffix
+        id: get-arch-suffix
         run: |
-          echo "ARCH_TAG=$(echo '${{ matrix.docker-platform }}' | cut -d '/' -f2- | tr -s '/' '_')" >> $GITHUB_ENV
+          ARCH_SUFFIX="$(echo '${{ matrix.docker-platform }}' | cut -d '/' -f2- | tr -s '/' '_')"
+          echo "::set-output name=archsuffix::$ARCH_SUFFIX"
 
       # Show archictecture suffix
       - name: Show image architecture suffix
         run: |
-          echo "Architecture suffix: ${{ env.ARCH_TAG }}"
+          echo "Architecture suffix: ${{ steps.get-arch-suffix.outputs.archsuffix }}""
 
       # Build "latest"
       - name: Build & Push - latest
@@ -408,19 +418,21 @@ jobs:
           no-cache: true
           platforms: ${{ matrix.docker-platform }}
           push: true
-          tags: ghcr.io/${{ env.GHCR_IMAGE }}:latest_${{ env.ARCH_TAG }}
+          tags: ghcr.io/${{ env.GHCR_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}
           labels: ${{ steps.meta.outputs.labels }}
 
       # Get version from "latest"
       - name: Get latest image version
+        id: get-image-version
         run: |
-          docker pull "ghcr.io/${{ env.GHCR_IMAGE }}:latest_${{ env.ARCH_TAG }}"
-          echo "VERSION_TAG=$(docker run --rm --entrypoint cat "ghcr.io/${{ env.GHCR_IMAGE }}:latest_${{ env.ARCH_TAG }}" /CONTAINER_VERSION)" >> $GITHUB_ENV
+          docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}"
+          VERSION_TAG="$(docker run --rm --entrypoint cat \"${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}\" /CONTAINER_VERSION)"
+          echo "::set-output name=imageversion::$VERSION_TAG"
 
       # Show version from "latest"
       - name: Show latest image version
         run: |
-          echo "ghcr.io/${{ env.GHCR_IMAGE }}:latest contains version: ${{ env.VERSION_TAG }}"
+          echo "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest contains version: ${{ steps.get-image-version.outputs.imageversion }}"
 
       # Build version specific
       - name: Build & Push - version specific
@@ -431,7 +443,7 @@ jobs:
           no-cache: false
           platforms: ${{ matrix.docker-platform }}
           push: true
-          tags: ghcr.io/${{ env.GHCR_IMAGE }}:${{ env.VERSION_TAG }}_${{ env.ARCH_TAG }}
+          tags: ghcr.io/${{ env.GHCR_IMAGE }}:${{ steps.get-image-version.outputs.imageversion }}_${{ steps.get-arch-suffix.outputs.archsuffix }}
           labels: ${{ steps.meta.outputs.labels }}
 
       # Patch dockerfile to remove healthcheck
@@ -447,7 +459,7 @@ jobs:
           no-cache: false
           platforms: ${{ matrix.docker-platform }}
           push: true
-          tags: ghcr.io/${{ env.GHCR_IMAGE }}:latest_nohealthcheck_${{ env.ARCH_TAG }}
+          tags: ghcr.io/${{ env.GHCR_IMAGE }}:latest_nohealthcheck_${{ steps.get-arch-suffix.outputs.archsuffix }}
           labels: ${{ steps.meta.outputs.labels }}
 
       # Build version specific _nohealthcheck
@@ -459,5 +471,5 @@ jobs:
           no-cache: false
           platforms: ${{ matrix.docker-platform }}
           push: true
-          tags: ghcr.io/${{ env.GHCR_IMAGE }}:${{ env.VERSION_TAG }}_nohealthcheck_${{ env.ARCH_TAG }}
+          tags: ghcr.io/${{ env.GHCR_IMAGE }}:${{ steps.get-image-version.outputs.imageversion }}_nohealthcheck_${{ steps.get-arch-suffix.outputs.archsuffix }}
           labels: ${{ steps.meta.outputs.labels }}
