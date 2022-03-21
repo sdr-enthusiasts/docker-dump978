@@ -109,7 +109,7 @@ jobs:
         run: |
           set -x
           docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}"
-          VERSION_TAG="$(docker run --rm --entrypoint cat \"${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}\" /CONTAINER_VERSION)"
+          VERSION_TAG="$(docker run --rm --entrypoint cat ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }} /CONTAINER_VERSION)"
           echo "::set-output name=imageversion::$VERSION_TAG"
 
       # Show version from "latest"
@@ -219,7 +219,7 @@ jobs:
         run: |
           set -x
           docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}"
-          VERSION_TAG="$(docker run --rm --entrypoint cat \"${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}\" /CONTAINER_VERSION)"
+          VERSION_TAG="$(docker run --rm --entrypoint cat ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }} /CONTAINER_VERSION)"
           echo "::set-output name=imageversion::$VERSION_TAG"
 
       # Show version from "latest"
@@ -318,7 +318,7 @@ jobs:
         run: |
           set -x
           docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}"
-          VERSION_TAG="$(docker run --rm --entrypoint cat \"${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}\" /CONTAINER_VERSION)"
+          VERSION_TAG="$(docker run --rm --entrypoint cat ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }} /CONTAINER_VERSION)"
           echo "::set-output name=imageversion::$VERSION_TAG"
 
       # Show version from "latest"
@@ -440,7 +440,7 @@ jobs:
         run: |
           set -x
           docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}"
-          VERSION_TAG="$(docker run --rm --entrypoint cat \"${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}\" /CONTAINER_VERSION)"
+          VERSION_TAG="$(docker run --rm --entrypoint cat ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }} /CONTAINER_VERSION)"
           echo "::set-output name=imageversion::$VERSION_TAG"
 
       # Show version from "latest"
