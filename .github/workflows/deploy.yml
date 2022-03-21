@@ -107,6 +107,7 @@ jobs:
       - name: Get latest image version
         id: get-image-version
         run: |
+          set -x
           docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}"
           VERSION_TAG="$(docker run --rm --entrypoint cat \"${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}\" /CONTAINER_VERSION)"
           echo "::set-output name=imageversion::$VERSION_TAG"
@@ -192,13 +193,14 @@ jobs:
       - name: Get image architecture suffix
         id: get-arch-suffix
         run: |
+          set -x
           ARCH_SUFFIX="$(echo '${{ matrix.docker-platform }}' | cut -d '/' -f2- | tr -s '/' '_')"
           echo "::set-output name=archsuffix::$ARCH_SUFFIX"
 
       # Show archictecture suffix
       - name: Show image architecture suffix
         run: |
-          echo "Architecture suffix: ${{ steps.get-arch-suffix.outputs.archsuffix }}""
+          echo "Architecture suffix: ${{ steps.get-arch-suffix.outputs.archsuffix }}"
 
       # Build "latest"
       - name: Build & Push - latest
@@ -215,6 +217,7 @@ jobs:
       - name: Get latest image version
         id: get-image-version
         run: |
+          set -x
           docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}"
           VERSION_TAG="$(docker run --rm --entrypoint cat \"${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}\" /CONTAINER_VERSION)"
           echo "::set-output name=imageversion::$VERSION_TAG"
@@ -313,6 +316,7 @@ jobs:
       - name: Get latest image version
         id: get-image-version
         run: |
+          set -x
           docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}"
           VERSION_TAG="$(docker run --rm --entrypoint cat \"${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}\" /CONTAINER_VERSION)"
           echo "::set-output name=imageversion::$VERSION_TAG"
@@ -409,13 +413,14 @@ jobs:
       - name: Get image architecture suffix
         id: get-arch-suffix
         run: |
+          set -x
           ARCH_SUFFIX="$(echo '${{ matrix.docker-platform }}' | cut -d '/' -f2- | tr -s '/' '_')"
           echo "::set-output name=archsuffix::$ARCH_SUFFIX"
 
       # Show archictecture suffix
       - name: Show image architecture suffix
         run: |
-          echo "Architecture suffix: ${{ steps.get-arch-suffix.outputs.archsuffix }}""
+          echo "Architecture suffix: ${{ steps.get-arch-suffix.outputs.archsuffix }}"
 
       # Build "latest"
       - name: Build & Push - latest
@@ -433,6 +438,7 @@ jobs:
       - name: Get latest image version
         id: get-image-version
         run: |
+          set -x
           docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}"
           VERSION_TAG="$(docker run --rm --entrypoint cat \"${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}\" /CONTAINER_VERSION)"
           echo "::set-output name=imageversion::$VERSION_TAG"
