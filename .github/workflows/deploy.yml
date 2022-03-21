@@ -50,3 +50,4 @@ jobs:
       dockerhub_repo: dump978
     secrets:
       ghcr_token: ${{ secrets.GITHUB_TOKEN }}
+      dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
