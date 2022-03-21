@@ -102,8 +102,8 @@ jobs:
         id: get-image-version
         run: |
           set -x
-          docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}"
-          VERSION_TAG="$(docker run --rm --entrypoint cat ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }} /CONTAINER_VERSION)"
+          docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest"
+          VERSION_TAG="$(docker run --rm --entrypoint cat ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest /CONTAINER_VERSION)"
           echo "::set-output name=imageversion::$VERSION_TAG"
 
       # Show version from "latest"
@@ -311,8 +311,8 @@ jobs:
         id: get-image-version
         run: |
           set -x
-          docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }}"
-          VERSION_TAG="$(docker run --rm --entrypoint cat ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest_${{ steps.get-arch-suffix.outputs.archsuffix }} /CONTAINER_VERSION)"
+          docker pull "${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest"
+          VERSION_TAG="$(docker run --rm --entrypoint cat ${{ env.DOCKERHUB_REPO }}/${{ env.DOCKERHUB_IMAGE }}:latest /CONTAINER_VERSION)"
           echo "::set-output name=imageversion::$VERSION_TAG"
 
       # Show version from "latest"
