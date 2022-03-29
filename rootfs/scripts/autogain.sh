@@ -822,7 +822,7 @@ function autogain_finish_gainlevel_init() {
     # -----
     logger_debug "Entering: autogain_finish_state_init"
     # Set review time
-    increase_review_timestamp
+    increase_review_timestamp "$AUTOGAIN_INITIAL_PERIOD"
 
     # Gather statistics for the current gain level
     update_stats_files
@@ -877,7 +877,7 @@ function autogain_finish_gainlevel_finetune() {
     # -----
     logger_debug "Entering: autogain_finish_state_finetune"
     # Set review time
-    increase_review_timestamp
+    increase_review_timestamp "$AUTOGAIN_FINETUNE_PERIOD"
 
     # Gather statistics for the current gain level
     update_stats_files
