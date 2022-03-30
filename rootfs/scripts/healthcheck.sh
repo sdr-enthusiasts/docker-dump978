@@ -50,37 +50,11 @@ else
 fi
 
 # Make sure we're receiving messages from the SDR
-for ((i = 120 ; i > -2 ; i--)); do
-
-    # determine json filename
-    if [[ "$i" -eq -1 ]]; then
-        JSONFILE="/run/uat2json/aircraft.json"
-    else
-        JSONFILE="/run/uat2json/aircraft.json.$i"
-    fi
-
-    # make sure file exists before trying to use jq on it
-    if [[ -e "$JSONFILE" ]]; then
-
-        # get the number of messages in the file
-        NUM_MSGS=$(jq .messages < "$JSONFILE")
-
-        # set END_MSGS to most recent number of messages
-        END_MSGS="$NUM_MSGS"
-
-        # if we haven't yet set START_MSGS, then set it
-        if [[ -z "$START_MSGS" ]]; then
-            START_MSGS="$NUM_MSGS"
-        fi
-    fi
-
-done
-# if END_MSGS is greater than START_MSGS then we are receiving data
-if [[ "$END_MSGS" -gt "$START_MSGS" ]]; then
-    MSG_DIFF=$((END_MSGS - START_MSGS))
-    echo "received $MSG_DIFF messages from SDR in past 2 hours, OK."
+returnvalue=$(jq .last_15min.total_raw_messages /run/stats/stats.json)
+if [[ $(echo "$returnvalue > 0" | bc -l) -eq 1 ]]; then
+    echo "last_15min:raw_accepted is $returnvalue: HEALTHY"
 else
-    echo "received 0 messages from SDR in past 2 hours, NOT OK."
+    echo "last_15min:raw_accepted is 0: UNHEALTHY"
     EXITCODE=1
 fi
 
