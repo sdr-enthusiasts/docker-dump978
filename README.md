@@ -155,6 +155,8 @@ You should now be feeding ADSB-ES & UAT to ADSBExchange and FlightAware.
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `TZ` | Local timezone in ["TZ database name" format](<https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>). | `UTC` |
+| `LAT` | Latitude of your receiver. Only required if you want range statistics for InfluxDB or Prometheus, or if you are using the autogain script. | Unset |
+| `LON` | Longitude of your receiver. Only required if you want range statistics for InfluxDB or Prometheus, or if you are using the autogain script. | Unset |
 
 ### `dump978-fa` General Options
 
@@ -185,9 +187,9 @@ These variables control the auto-gain system (explained further below). These sh
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `AUTOGAIN_INITIAL_PERIOD` | How long each gain level should be measured during auto-gain initialisation (ie: "roughing in"), in seconds. | `7200` (2 hours) |
-| `AUTOGAIN_INITIAL_MSGS_ACCEPTED` | How many locally accepted messages should be received per gain level during auto-gain initialisaion to ensure accurate measurement. | `1000000` |
+| `AUTOGAIN_INITIAL_MSGS_ACCEPTED` | How many locally accepted messages should be received per gain level during auto-gain initialisaion to ensure accurate measurement. | `100000` |
 | `AUTOGAIN_FINETUNE_PERIOD` | How long each gain level should be measured during auto-gain fine-tuning, in seconds. | `604800` (7 days) |
-| `AUTOGAIN_FINETUNE_MSGS_ACCEPTED` | How many locally accepted messages should be received per gain level during auto-gain fine-tuning to ensure accurate measurement. | `7000000` |
+| `AUTOGAIN_FINETUNE_MSGS_ACCEPTED` | How many locally accepted messages should be received per gain level during auto-gain fine-tuning to ensure accurate measurement. | `700000` |
 | `AUTOGAIN_FINISHED_PERIOD` | How long between the completion of fine-tuning (and ultimately setting a preferred gain), and re-running the entire process. | `31536000` (1 year) |
 | `AUTOGAIN_MAX_GAIN_VALUE` | The maximum gain setting in dB that will be used by auto-gain. | `49.6` (max supported by `readsb`) |
 | `AUTOGAIN_MIN_GAIN_VALUE` | The minimum gain setting in dB that will be used by auto-gain. | `0.0` (min supported by `readsb`) |
@@ -222,7 +224,7 @@ These variables control exposing flight data to [Prometheus](https://prometheus.
 
 ## Auto-Gain system
 
-An automatic gain adjustment system is included in this container, and can be activated by setting the environment variable `DUMP978_SDR_GAIN` to `autogain`. You should also map `/run/autogain` to persistant storage, otherwise the auto-gain system will start over each time the container is restarted.
+An automatic gain adjustment system is included in this container, and can be activated by setting the environment variable `DUMP978_SDR_GAIN` to `autogain`. You should also map `/run/autogain` to persistant storage, otherwise the auto-gain system will start over each time the container is restarted. You should also ensure `LAT` and `LON` are set because the script uses the maximum range as a metric for choosing the best gain level.
 
 *Why is this written in bash?* Because I wanted to keep the container size down and not have to install an interpreter like python. I don't know C/Go/Perl or any other languages.
 
