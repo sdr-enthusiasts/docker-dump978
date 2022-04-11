@@ -1,9 +1,6 @@
 #!/usr/bin/with-contenv bash
 # shellcheck shell=bash
 
-# Exit abnormally for any error
-set -eo pipefail
-
 # Set default exit code
 EXITCODE=0
 
