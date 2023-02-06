@@ -5,7 +5,10 @@
 touch /run/lighttpd.pid
 chown nobody /run/lighttpd.pid
 mkdir -p /var/log/lighttpd
+touch /var/log/lighttpd/error.log
+truncate -s 0 /var/log/lighttpd/error.log
 chown -R nobody /var/log/lighttpd
+
 
 # Launch webapp unless disabled
 if [[ -z "$DISABLE_WEBAPP" ]]; then
