@@ -68,6 +68,8 @@ RUN set -x && \
     # healthcheck dependencies
     KEPT_PACKAGES+=(net-tools) && \
     KEPT_PACKAGES+=(jq) && \
+    KEPT_PACKAGES+=(lighttpd) && \
+    KEPT_PACKAGES+=(lighttpd-mod-magnet) && \
     # Install packages.
     apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -89,6 +91,10 @@ RUN set -x && \
     mkdir -p /run/stats && \
     mkdir -p /run/autogain && \
     mkdir -p /etc/telegraf/telegraf.d && \
+    # Health check
+    mkdir -p /etc/lighttpd/lua && \
+    echo -e 'server.modules += ("mod_magnet")\n\n$HTTP["url"] =~ "^/health/?" {\n  magnet.attract-physical-path-to = ("/etc/lighttpd/lua/healthcheck.lua")\n}' > /etc/lighttpd/conf-enabled/90-healthcheck.conf && \
+    echo -e 'lighty.content = { "OK" }\nreturn 200' > /etc/lighttpd/lua/healthcheck.lua && \
     # Clean up
     apt-get remove -y ${TEMP_PACKAGES[@]} && \
     apt-get autoremove -y && \
