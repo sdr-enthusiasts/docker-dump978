@@ -49,8 +49,8 @@ You can now:
 
 * Add a net-connector to your readsb container, to pull data from port 37981 as `raw_in`, eg: `<DOCKERHOST>,37981,raw_in`
 * Add the following environment variables to your piaware container:
-  - `UAT_RECEIVER_TYPE=relay`
-  - `UAT_RECEIVER_HOST=<DOCKERHOST>`
+   - `UAT_RECEIVER_TYPE=relay`
+   - `UAT_RECEIVER_HOST=<DOCKERHOST>`
 
 You should now be feeding UAT to ADSBExchange and FlightAware.
 
