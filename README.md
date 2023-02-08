@@ -19,7 +19,8 @@ The container listens on the following TCP ports:
 |------|-------------|
 | `30978` | Raw UAT output (NOT compatible with `readsb`'s `raw_in`!) |
 | `30979` | Decoded JSON output |
-| `37981` | `uat2esnt` converted output. This IS compatible with `readsb`'s `raw_in`. |
+| `37981` | `uat2esnt` converted output. This IS compatible with `readsb`'s `raw_in` |
+| `80` | Webserver for SkyAware978 and HTTP HealthCheck |
 
 ## Paths & Volumes
 
@@ -38,6 +39,7 @@ docker run \
     -p 30978:30978 \
     -p 30979:30979 \
     -p 37981:37981 \
+    -p 30980:80 \
     --device /dev/bus/usb:/dev/bus/usb \
     -e DUMP978_RTLSDR_DEVICE=00000978 \
     ghcr.io/sdr-enthusiasts/docker-dump978:latest
@@ -47,8 +49,8 @@ You can now:
 
 * Add a net-connector to your readsb container, to pull data from port 37981 as `raw_in`, eg: `<DOCKERHOST>,37981,raw_in`
 * Add the following environment variables to your piaware container:
-  * `UAT_RECEIVER_TYPE=relay`
-  * `UAT_RECEIVER_HOST=<DOCKERHOST>`
+   - `UAT_RECEIVER_TYPE=relay`
+   - `UAT_RECEIVER_HOST=<DOCKERHOST>`
 
 You should now be feeding UAT to ADSBExchange and FlightAware.
 
@@ -104,6 +106,7 @@ services:
       - 30978:30978
       - 30979:30979
       - 37981:37981
+      - 39980:80
     environment:
       - TZ=America/New_York
       - DUMP978_RTLSDR_DEVICE=00000978
@@ -221,6 +224,14 @@ These variables control exposing flight data to [Prometheus](https://prometheus.
 | `ENABLE_PROMETHEUS` | Set to any string to enable Prometheus support | Unset |
 | `PROMETHEUSPORT` | The port that the prometheus client will listen on | `9273` |
 | `PROMETHEUSPATH` | The path that the prometheus client will publish metrics on | `/metrics` |
+
+## `dump978` Web Pages
+
+The container's webserver makes SkyAware978 (and the related `data` directories with `json` statistics files) available at `/skyaware978`. This means, using the port mapping example shown above, that you can access these URLs (among other things):
+
+* [http://my_ip:30980/skyaware978](http://my_ip:30980/skyaware978) -- SkyAware978 map
+* [http://my_ip:30980/skyaware978/data/aircraft.json](http://my_ip:30980/skyaware978/data/aircraft.json) -- aircraft.json statistics file
+* [http://my_ip:30980/health](http://my_ip:30980/health) -- HealthCheck results (returns `OK` if container is healthy)
 
 ## Auto-Gain system
 
