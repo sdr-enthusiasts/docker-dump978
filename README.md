@@ -49,8 +49,8 @@ You can now:
 
 * Add a net-connector to your readsb container, to pull data from port 37981 as `raw_in`, eg: `<DOCKERHOST>,37981,raw_in`
 * Add the following environment variables to your piaware container:
-  * `UAT_RECEIVER_TYPE=relay`
-  * `UAT_RECEIVER_HOST=<DOCKERHOST>`
+  - `UAT_RECEIVER_TYPE=relay`
+  - `UAT_RECEIVER_HOST=<DOCKERHOST>`
 
 You should now be feeding UAT to ADSBExchange and FlightAware.
 
@@ -229,9 +229,9 @@ These variables control exposing flight data to [Prometheus](https://prometheus.
 
 The container's webserver makes SkyAware978 (and the related `data` directories with `json` statistics files) available at `/skyaware978`. This means, using the port mapping example shown above, that you can access these URLs (among other things):
 
-- [http://my_ip:30980/skyaware978](http://my_ip:30980/skyaware978) -- SkyAware978 map
-- [http://my_ip:30980/skyaware978/data/aircraft.json](http://my_ip:30980/skyaware978/data/aircraft.json) -- aircraft.json statistics file
-- [http://my_ip:30980/health](http://my_ip:30980/health) -- HealthCheck results (returns `OK` if container is healthy)
+* [http://my_ip:30980/skyaware978](http://my_ip:30980/skyaware978) -- SkyAware978 map
+* [http://my_ip:30980/skyaware978/data/aircraft.json](http://my_ip:30980/skyaware978/data/aircraft.json) -- aircraft.json statistics file
+* [http://my_ip:30980/health](http://my_ip:30980/health) -- HealthCheck results (returns `OK` if container is healthy)
 
 ## Auto-Gain system
 
