@@ -106,7 +106,7 @@ services:
       - 30978:30978
       - 30979:30979
       - 37981:37981
-      - 39980:80
+      - 30980:80
     environment:
       - TZ=America/New_York
       - DUMP978_RTLSDR_DEVICE=00000978
