@@ -3,7 +3,7 @@
 [![Docker Image Size (tag)](https://img.shields.io/docker/image-size/mikenye/dump978/latest)](https://hub.docker.com/r/mikenye/dump978)
 [![Discord](https://img.shields.io/discord/734090820684349521)](https://discord.gg/sTf9uYF)
 
-This container provides the FlightAware 978MHz UAT decoder, and the ADSBExchange fork of `uat2esnt`, working together in harmony. A rare example of harmony in these turblent times. :-)
+This container provides the FlightAware 978MHz UAT decoder dump978-fa and wiedehopf's implementation of `uat2esnt` code within `readsb`. (Thanks mutability for dump978-fa and the code used within readsb)
 
 This container can be used alongside [sdr-enthusiasts/docker-readsb-protobuf](https://github.com/sdr-enthusiasts/docker-readsb-protobuf) to provide UAT into several feeders.
 
@@ -17,9 +17,10 @@ The container listens on the following TCP ports:
 
 | Port | Description |
 |------|-------------|
-| `30978` | Raw UAT output (NOT compatible with `readsb`'s `raw_in`!) |
+| `30978` | Raw UAT output (NOT compatible with `readsb`'s `raw_in` (compatible with wiedehopf readsb's `uat_in`)!) |
 | `30979` | Decoded JSON output |
-| `37981` | `uat2esnt` converted output. This IS compatible with `readsb`'s `raw_in` |
+| `37981` | `uat2esnt/readsb` converted raw output. This IS compatible with `readsb`'s `raw_in`. (DEPRECATED, use beast on 37982!) |
+| `37982` | `uat2esnt/readsb` converted beast output. This IS compatible with `readsb`'s `beast_in`. |
 | `80` | Webserver for SkyAware978 and HTTP HealthCheck |
 
 ## Paths & Volumes
@@ -38,8 +39,9 @@ docker run \
     --name dump978 \
     -p 30978:30978 \
     -p 30979:30979 \
-    -p 37981:37981 \
     -p 30980:80 \
+    -p 37981:37981 \
+    -p 37982:37982 \
     --device /dev/bus/usb:/dev/bus/usb \
     -e DUMP978_RTLSDR_DEVICE=00000978 \
     ghcr.io/sdr-enthusiasts/docker-dump978:latest
@@ -47,12 +49,12 @@ docker run \
 
 You can now:
 
-* Add a net-connector to your readsb container, to pull data from port 37981 as `raw_in`, eg: `<DOCKERHOST>,37981,raw_in`
+* Add a net-connector to your readsb container, to pull data from port 37982 as `beast_in`, eg: `<DOCKERHOST>,37982,beast_in`
 * Add the following environment variables to your piaware container:
    - `UAT_RECEIVER_TYPE=relay`
    - `UAT_RECEIVER_HOST=<DOCKERHOST>`
 
-You should now be feeding UAT to ADSBExchange and FlightAware.
+You should now be feeding UAT to most aggregators.
 
 ## Up and Running - `docker-compose` (with `readsb`, `adsbx` and `piaware`)
 
@@ -105,11 +107,14 @@ services:
     ports:
       - 30978:30978
       - 30979:30979
-      - 37981:37981
       - 30980:80
+      - 37981:37981
+      - 37982:37982
     environment:
       - TZ=America/New_York
       - DUMP978_RTLSDR_DEVICE=00000978
+      - LAT=-33.33333
+      - LON=111.11111
 
   adsbx:
     image: mikenye/adsbexchange

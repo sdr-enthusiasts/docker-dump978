@@ -2,6 +2,10 @@
 # and avoid headache of having to add apt key / apt repo and/or build from src.
 FROM telegraf AS telegraf
 RUN touch /tmp/.nothing
+# Declare the wreadsb image so we can copy readsb binary out of it,
+# and avoid headache of having to add apt key / apt repo and/or build from src.
+FROM ghcr.io/sdr-enthusiasts/docker-baseimage:wreadsb as wreadsb
+RUN touch /tmp/.nothing
 
 # Build final image
 FROM ghcr.io/sdr-enthusiasts/docker-baseimage:dump978-full
@@ -52,6 +56,9 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # Copy telegraf
 COPY --from=telegraf /usr/bin/telegraf /usr/bin/telegraf
 
+# Copy wreadsb
+COPY --from=wreadsb /usr/local/bin/readsb /usr/bin/readsb
+
 RUN set -x && \
     TEMP_PACKAGES=() && \
     KEPT_PACKAGES=() && \
@@ -70,6 +77,11 @@ RUN set -x && \
     KEPT_PACKAGES+=(jq) && \
     KEPT_PACKAGES+=(lighttpd) && \
     KEPT_PACKAGES+=(lighttpd-mod-magnet) && \
+    # wreadsb deps
+    KEPT_PACKAGES+=(libncurses5) && \
+    KEPT_PACKAGES+=(zlib1g) && \
+    KEPT_PACKAGES+=(libzstd1) && \
+    KEPT_PACKAGES+=(librtlsdr0) && \
     # Install packages.
     apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -86,7 +98,7 @@ RUN set -x && \
     cp -v ./uat2esnt /usr/local/bin/ && \
     cp -v ./uat2json /usr/local/bin/ && \
     cp -v ./extract_nexrad /usr/local/bin/ && \
-    mkdir -p /run/uat2json && \
+    mkdir -p /run/skyaware978 && \
     popd && \
     mkdir -p /run/stats && \
     mkdir -p /run/autogain && \
