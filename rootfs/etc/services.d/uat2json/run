@@ -5,10 +5,10 @@ set -eo pipefail
 
 sleep 5
 
-[[ -n "${LON}" ]] && [[ -n "${LAT}" ]] && optstr="--rec-pos ${LAT},${LON}"
+if [[ -n "${LON}" ]] && [[ -n "${LAT}" ]]; then
+    optstr="--lat ${LAT} --lon ${LON}"
+fi
 
-# shellcheck disable=SC2086
-socat -u "TCP:127.0.0.1:30978" STDOUT | \
-    uat2json ${optstr} /run/uat2json 2>&1 | \
-    stdbuf -o0 sed --unbuffered '/^$/d' | \
-    stdbuf -o0 awk '{print "[uat2json] " strftime("%Y/%m/%d %H:%M:%S", systime()) " " $0}'
+# shellcheck disable=SC2016,SC2086
+skyaware978 --json-dir /run/uat2json --connect 127.0.0.1:30978 --reconnect-interval 30 --history-count 180 --history-interval 15 ${optstr} \
+2>&1 | stdbuf -o0 awk '{print "[skyware] " strftime("%Y/%m/%d %H:%M:%S", systime()) " " $0}'
