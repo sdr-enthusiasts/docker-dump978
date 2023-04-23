@@ -98,7 +98,7 @@ RUN set -x && \
     cp -v ./uat2esnt /usr/local/bin/ && \
     cp -v ./uat2json /usr/local/bin/ && \
     cp -v ./extract_nexrad /usr/local/bin/ && \
-    mkdir -p /run/uat2json && \
+    mkdir -p /run/skyaware978 && \
     popd && \
     mkdir -p /run/stats && \
     mkdir -p /run/autogain && \
