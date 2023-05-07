@@ -1,13 +1,17 @@
 #!/usr/bin/with-contenv bash
 #shellcheck shell=bash
 
+source "/scripts/common"
+
 # If troubleshooting:
 if [[ -n "$DEBUG_LOGGING" ]]; then
     set -x
 fi
 
-if [[ "$READSB_DEVICE_TYPE" == "rtlsdr" ]]; then
-    if [[ -n "$READSB_ENABLE_BIASTEE" ]]; then
+READSB_DEVICE_TYPE="${READSB_DEVICE_TYPE}${DUMP978_DEVICE_TYPE}"
+READSB_ENABLE_BIASTEE="${READSB_ENABLE_BIASTEE}${DUMP978_ENABLE_BIASTEE}"
+if [[ "${READSB_DEVICE_TYPE,,}" == "rtlsdr" ]]; then
+    if chk_enabled "$READSB_ENABLE_BIASTEE"; then
         # Prepare temp file
         biast_tempfile=$(mktemp)
         # Attempt to get devices, use random serial so it's very unlikely we claim an SDR used by someone else
