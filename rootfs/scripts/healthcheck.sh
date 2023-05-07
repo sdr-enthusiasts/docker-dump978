@@ -56,8 +56,9 @@ else
 fi
 
 ##### Service Death Counts #####
-services=('autogain' 'dump978' 'stats' 'telegraf' 'telegraf_socat')
-services+=('uat2esnt' 'uat2json' 'uat2json_rotate')
+#shellcheck disable=SC2206
+services=($(find /etc/services.d/* -type d | awk -F'/' '{print $4}'| xargs))
+
 # For each service...
 for service in "${services[@]}"; do
     # Get number of non-zero service exits
