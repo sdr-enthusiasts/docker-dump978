@@ -1,5 +1,30 @@
 # sdr-enthusiasts/docker-dump978
 
+- [sdr-enthusiasts/docker-dump978](#sdr-enthusiastsdocker-dump978)
+  - [Introduction](#introduction)
+  - [Ports](#ports)
+  - [Paths \& Volumes](#paths--volumes)
+  - [Up and Running - `docker run`](#up-and-running---docker-run)
+  - [Up and Running - `docker-compose` (with `ultrafeeder`, `radarbox` and `piaware`)](#up-and-running---docker-compose-with-ultrafeeder-radarbox-and-piaware)
+  - [Environment Variables](#environment-variables)
+    - [Container Options](#container-options)
+    - [`dump978-fa` General Options](#dump978-fa-general-options)
+    - [`dump978-fa` RTL-SDR Options](#dump978-fa-rtl-sdr-options)
+    - [Auto-Gain Options](#auto-gain-options)
+    - [InfluxDB Options](#influxdb-options)
+    - [Prometheus Options](#prometheus-options)
+  - [`dump978` Web Pages](#dump978-web-pages)
+  - [Auto-Gain system](#auto-gain-system)
+    - [Initialisation Stage](#initialisation-stage)
+    - [Fine-Tuning Stage](#fine-tuning-stage)
+    - [Finished Stage](#finished-stage)
+    - [State/Log/Stats Files](#statelogstats-files)
+    - [Forcing auto-gain to re-run from scratch](#forcing-auto-gain-to-re-run-from-scratch)
+  - [Logging](#logging)
+  - [Getting help](#getting-help)
+
+## Introduction
+
 [![Docker Image Size (tag)](https://img.shields.io/docker/image-size/mikenye/dump978/latest)](https://hub.docker.com/r/mikenye/dump978)
 [![Discord](https://img.shields.io/discord/734090820684349521)](https://discord.gg/sTf9uYF)
 
