@@ -4,11 +4,11 @@ FROM telegraf AS telegraf
 RUN touch /tmp/.nothing
 # Declare the wreadsb image so we can copy readsb binary out of it,
 # and avoid headache of having to add apt key / apt repo and/or build from src.
-FROM ghcr.io/sdr-enthusiasts/docker-baseimage:wreadsb as wreadsb
+FROM ghcr.io/sdr-enthusiasts/docker-baseimage:wreadsb-test-pr as wreadsb
 RUN touch /tmp/.nothing
 
 # Build final image
-FROM ghcr.io/sdr-enthusiasts/docker-baseimage:dump978-full
+FROM ghcr.io/sdr-enthusiasts/docker-baseimage:dump978-full-test-pr
 
 ENV PROMETHEUSPORT=9273 \
     PROMETHEUSPATH="/metrics" \
@@ -82,6 +82,7 @@ RUN set -x && \
     KEPT_PACKAGES+=(zlib1g) && \
     KEPT_PACKAGES+=(libzstd1) && \
     KEPT_PACKAGES+=(librtlsdr0) && \
+    KEPT_PACKAGES+=(libncurses6) && \
     # Install packages.
     apt-get update && \
     apt-get install -y --no-install-recommends \
