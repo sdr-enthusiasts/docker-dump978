@@ -85,13 +85,15 @@ RUN set -x && \
     # Install packages.
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        ${KEPT_PACKAGES[@]} \
-        ${TEMP_PACKAGES[@]} \
-        && \
+    ${KEPT_PACKAGES[@]} \
+    ${TEMP_PACKAGES[@]} \
+    && \
     git config --global advice.detachedHead false && \
     # Build & install uat2esnt
     git clone --branch=master --single-branch --depth=1 "https://github.com/adsbxchange/uat2esnt.git" "/src/uat2esnt" && \
     pushd "/src/uat2esnt" && \
+    # Fix build error with bookworm
+    sed -i 's/ -Werror//' Makefile && \
     echo "uat2esnt $(git log | head -1)" >> /VERSIONS && \
     make all test && \
     cp -v ./uat2text /usr/local/bin/ && \
