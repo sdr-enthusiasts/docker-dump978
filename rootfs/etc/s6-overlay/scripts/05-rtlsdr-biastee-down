@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bash
+#!/command/with-contenv bash
 #shellcheck shell=bash
 
 # If troubleshooting:
@@ -9,7 +9,7 @@ fi
 if [[ "$READSB_DEVICE_TYPE" == "rtlsdr" ]]; then
     if [[ -n "$READSB_ENABLE_BIASTEE" ]]; then
         # Wait for readsb service to be down
-        s6-svwait -D /run/s6/legacy-services/readsb
+        s6-svwait -D /run/service/readsb
         pkill --signal 9 -ef "/usr/local/bin/readsb "
         sleep 1
         # Prepare temp file

@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv python3
+#!/command/with-contenv python3
 
 from abc import ABCMeta, abstractmethod
 import collections

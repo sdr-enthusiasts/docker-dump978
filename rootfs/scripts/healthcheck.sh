@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bash
+#!/command/with-contenv bash
 # shellcheck shell=bash
 
 # Set default exit code
@@ -63,10 +63,10 @@ services=($(find /etc/services.d/* -type d | awk -F'/' '{print $4}'| xargs))
 for service in "${services[@]}"; do
     # Get number of non-zero service exits
     returnvalue=$(s6-svdt \
-                    -s "/run/s6/legacy-services/$service" | \
+                    -s "/run/service/$service" | \
                     grep -cv 'exitcode 0')
     # Reset service death counts
-    s6-svdt-clear "/run/s6/legacy-services/$service"
+    s6-svdt-clear "/run/service/$service"
     # Log healthy/unhealthy and exit abnormally if unhealthy
     if [[ "$returnvalue" -eq "0" ]]; then
         echo "abnormal death count for service $service is $returnvalue: HEALTHY"
