@@ -89,6 +89,11 @@ RUN set -x && \
     ${KEPT_PACKAGES[@]} \
     ${TEMP_PACKAGES[@]} \
     && \
+    # grab the bias t scripts
+    curl -o /etc/s6-overlay/scripts/05-rtlsdr-biastee-init https://raw.githubusercontent.com/sdr-enthusiasts/sdre-bias-t-common/main/09-rtlsdr-biastee-init && \
+    curl -o /etc/s6-overlay/scripts/05-rtlsdr-biastee-down  https://raw.githubusercontent.com/sdr-enthusiasts/sdre-bias-t-common/main/09-rtlsdr-biastee-down && \
+    chmod +x /etc/s6-overlay/scripts/05-rtlsdr-biastee-init && \
+    chmod +x /etc/s6-overlay/scripts/05-rtlsdr-biastee-down && \
     git config --global advice.detachedHead false && \
     # Build & install uat2esnt
     git clone --branch=master --single-branch --depth=1 "https://github.com/adsbxchange/uat2esnt.git" "/src/uat2esnt" && \
