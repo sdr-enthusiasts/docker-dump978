@@ -202,13 +202,6 @@ Here is an example `docker-compose.yml`:
       # The two 978 related parameters should only be included if you are running dump978 for UAT reception (USA only)
       - GRAPHS1090_DARKMODE=true
       - URL_978=http://dump978/skyaware978
-      #
-      # --------------------------------------------------
-      # Prometheus and InfluxDB connection parameters:
-      - INFLUXDBV2_URL=${INFLUX_URL}
-      - INFLUXDBV2_TOKEN=${INFLUX_TOKEN}
-      - INFLUXDBV2_BUCKET=${INFLUX_BUCKET}
-      - PROMETHEUS_ENABLE=true
     volumes:
       - /opt/adsb/ultrafeeder/globe_history:/var/globe_history
       - /opt/adsb/ultrafeeder/graphs1090:/var/lib/collectd
