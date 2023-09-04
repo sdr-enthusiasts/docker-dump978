@@ -92,6 +92,10 @@ RUN set -x && \
     # grab the bias t scripts
     curl -o /etc/s6-overlay/scripts/05-rtlsdr-biastee-init https://raw.githubusercontent.com/sdr-enthusiasts/sdre-bias-t-common/main/09-rtlsdr-biastee-init && \
     curl -o /etc/s6-overlay/scripts/05-rtlsdr-biastee-down  https://raw.githubusercontent.com/sdr-enthusiasts/sdre-bias-t-common/main/09-rtlsdr-biastee-down && \
+    sed -i 's/READSB_RTLSDR_DEVICE/DUMP978_RTLSDR_DEVICE/g' /etc/s6-overlay/scripts/05-rtlsdr-biastee-init && \
+    sed -i 's/READSB_ENABLE_BIASTEE/DUMP978_ENABLE_BIASTEE/g' /etc/s6-overlay/scripts/05-rtlsdr-biastee-init && \
+    sed -i 's/READSB_RTLSDR_DEVICE/DUMP978_RTLSDR_DEVICE/g' /etc/s6-overlay/scripts/05-rtlsdr-biastee-down && \
+    sed -i 's/READSB_ENABLE_BIASTEE/DUMP978_ENABLE_BIASTEE/g' /etc/s6-overlay/scripts/05-rtlsdr-biastee-down && \
     chmod +x /etc/s6-overlay/scripts/05-rtlsdr-biastee-init && \
     chmod +x /etc/s6-overlay/scripts/05-rtlsdr-biastee-down && \
     git config --global advice.detachedHead false && \
