@@ -10,6 +10,7 @@
     - [Container Options](#container-options)
     - [`dump978-fa` General Options](#dump978-fa-general-options)
     - [`dump978-fa` RTL-SDR Options](#dump978-fa-rtl-sdr-options)
+    - [General SDR Options](#general-sdr-options)
     - [Auto-Gain Options](#auto-gain-options)
     - [InfluxDB Options](#influxdb-options)
     - [Prometheus Options](#prometheus-options)
@@ -107,9 +108,8 @@ Here is an example `docker-compose.yml`:
       - 'c 189:* rwm'
     environment:
       - TZ=${FEEDER_TZ}
-      - READSB_RTLSDR_DEVICE=${ADSB_SDR_SERIAL}
-      - READSB_RTLSDR_PPM=${ADSB_SDR_PPM}
-      - READSB_GAIN=${ADSB_SDR_GAIN}
+      - DUMP978_SDR_PPM=${ADSB_SDR_PPM}
+      - DUMP978_SDR_GAIN=${ADSB_SDR_GAIN}
       - DUMP978_RTLSDR_DEVICE=${UAT_SDR_SERIAL}
       - DUMP978_SDR_GAIN=${UAT_SDR_GAIN}
       - DUMP978_SDR_PPM=${UAT_SDR_PPM}
@@ -170,7 +170,7 @@ Here is an example `docker-compose.yml`:
           mlathub,piaware,30105,beast_in;
           mlathub,rbfeeder,30105,beast_in;
           mlathub,radarvirtuel,30105,beast_in
-      # If you really want to feed ADSBExchange, you can do so by adding this above: 
+      # If you really want to feed ADSBExchange, you can do so by adding this above:
       #        adsb,feed1.adsbexchange.com,30004,beast_reduce_plus_out,uuid=${ADSBX_UUID};
       #        mlat,feed.adsbexchange.com,31090,39005,uuid=${ADSBX_UUID}
       #
@@ -202,13 +202,6 @@ Here is an example `docker-compose.yml`:
       # The two 978 related parameters should only be included if you are running dump978 for UAT reception (USA only)
       - GRAPHS1090_DARKMODE=true
       - URL_978=http://dump978/skyaware978
-      # 
-      # --------------------------------------------------
-      # Prometheus and InfluxDB connection parameters:
-      - INFLUXDBV2_URL=${INFLUX_URL}
-      - INFLUXDBV2_TOKEN=${INFLUX_TOKEN}
-      - INFLUXDBV2_BUCKET=${INFLUX_BUCKET}
-      - PROMETHEUS_ENABLE=true
     volumes:
       - /opt/adsb/ultrafeeder/globe_history:/var/globe_history
       - /opt/adsb/ultrafeeder/graphs1090:/var/lib/collectd
@@ -220,7 +213,7 @@ Here is an example `docker-compose.yml`:
       - /var/log:size=32M
 
   piaware:
-  # piaware feeds ADS-B and UAT data (from ultrafeeder) to FlightAware. It also includes a GUI Radar website and a status website   
+  # piaware feeds ADS-B and UAT data (from ultrafeeder) to FlightAware. It also includes a GUI Radar website and a status website
   # If you're not capturing UAT data with the dump978 container, remove or comment out the UAT_RECEIVER_TYPE and UAT_RECEIVER_HOST lines in the environment section below.
     image: ghcr.io/sdr-enthusiasts/docker-piaware
     # profiles:
@@ -306,6 +299,12 @@ Where the default value is "Unset", `dump978-fa`'s default will be used.
 | Variable | Description | Controls which `dump978-fa` option | Default |
 |----------|-------------|--------------------------------|---------|
 | `DUMP978_RTLSDR_DEVICE` | If using Select device by serial number. | `--sdr driver=rtlsdr,serial=` | Unset |
+
+### General SDR Options
+
+| Variable | Description | Default |
+|----------|-------------|--------------------------------|---------|
+| `DUMP978_ENABLE_BIASTEE` | Set to any value to enable bias-tee on your RTL-SDR. | Unset |
 
 ### Auto-Gain Options
 
