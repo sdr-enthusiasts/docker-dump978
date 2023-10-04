@@ -416,9 +416,7 @@ def main():
     # Change the argument to adjust logging output
     logging.basicConfig(level=logging.INFO)
 
-    print(
-        "Waiting for /run/stats/stats.json and /run/stats/polar_range.influx to be created..."
-    )
+    print("Waiting for /run/stats/stats.json to be created...")
     while True:
         try:
             with open("/run/stats/stats.json", "r") as f:
@@ -427,6 +425,10 @@ def main():
             pass
         time.sleep(1)
 
+    print(
+        "/run/stats/stats.json found\nWaiting for /run/stats/polar_range.influx to be created..."
+    )
+
     while True:
         try:
             with open("/run/stats/polar_range.influx", "r") as f:
@@ -434,6 +436,8 @@ def main():
         except FileNotFoundError:
             pass
         time.sleep(1)
+
+    print("/run/stats/polar_range.influx found\nStarting stats.py")
 
     raw_lock = Lock()
     raw_latest = PeriodStatistics()
