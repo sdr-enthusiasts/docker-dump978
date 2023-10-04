@@ -17,6 +17,7 @@ import time
 # Classes for various types of statistics
 ###############################################################################
 
+
 class BaseStatistic(metaclass=ABCMeta):
     """Defines an abstract base class for a single statistic to collect over time"""
 
@@ -203,7 +204,7 @@ class RangeStatistic(BaseStatistic):
         coslat2 = math.cos(math.radians(lat2))
         sinlat1 = math.sin(math.radians(lat1))
         sinlat2 = math.sin(math.radians(lat2))
-        a = math.sin(dlat / 2)**2 + coslat1 * coslat2 * math.sin(dlon / 2)**2
+        a = math.sin(dlat / 2) ** 2 + coslat1 * coslat2 * math.sin(dlon / 2) ** 2
         dist = 2 * radius * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
         x = coslat2 * math.sin(dlon)
@@ -224,7 +225,11 @@ class RangeStatistic(BaseStatistic):
             pos = self.extract(msg, [("position", "lat"), ("position", "lon")])
             dist, brng = self.gps_dist(self._origin, pos)
             bucket = round(brng / 5) % 72
-            if "tisb" not in msg["address_qualifier"] and "adsr" not in msg["address_qualifier"] and dist < 1000000:
+            if (
+                "tisb" not in msg["address_qualifier"]
+                and "adsr" not in msg["address_qualifier"]
+                and dist < 1000000
+            ):
                 self._range[bucket] = max(dist, self._range[bucket])
         except KeyError:
             pass
@@ -317,6 +322,7 @@ class PeriodStatistics:
 # Functions
 ###############################################################################
 
+
 def aggregate(raw_lock, raw_latest, json_lock, json_latest, polar_range):
     """Aggregate stats and write output files"""
 
@@ -360,7 +366,9 @@ def aggregate(raw_lock, raw_latest, json_lock, json_latest, polar_range):
         polar_range.aggregate(aggregate.history[0].get("max_distance_m"))
         with open("/run/stats/polar_range.influx", "w") as fout:
             for b, d in enumerate(polar_range._range):
-                fout.write("polar_range,bearing=%02d range=%d %d\n" % (b, d, time.time_ns()))
+                fout.write(
+                    "polar_range,bearing=%02d range=%d %d\n" % (b, d, time.time_ns())
+                )
 
 
 def parse_json(json_lock, json_latest):
@@ -408,10 +416,33 @@ def main():
     # Change the argument to adjust logging output
     logging.basicConfig(level=logging.INFO)
 
+    print(
+        "Waiting for /run/stats/stats.json and /run/stats/polar_range.influx to be created..."
+    )
+    while True:
+        try:
+            with open("/run/stats/stats.json", "r") as f:
+                break
+        except FileNotFoundError:
+            pass
+        time.sleep(1)
+
+    while True:
+        try:
+            with open("/run/stats/polar_range.influx", "r") as f:
+                break
+        except FileNotFoundError:
+            pass
+        time.sleep(1)
+
     raw_lock = Lock()
     raw_latest = PeriodStatistics()
     raw_latest.add(CountStatistic("total_raw_messages"))
-    raw_latest.add(CountStatistic("strong_raw_messages", key="rssi", test=lambda v: float(v) > -3.0))
+    raw_latest.add(
+        CountStatistic(
+            "strong_raw_messages", key="rssi", test=lambda v: float(v) > -3.0
+        )
+    )
     raw_latest.add(AverageStatistic("avg_raw_rssi", key="rssi"))
     raw_latest.add(MaxStatistic("peak_raw_rssi", key="rssi"))
     raw_latest.add(MinStatistic("min_raw_rssi", key="rssi"))
@@ -419,20 +450,42 @@ def main():
     json_lock = Lock()
     json_latest = PeriodStatistics()
     json_latest.add(CountStatistic("total_accepted_messages"))
-    json_latest.add(CountStatistic("strong_accepted_messages", key=("metadata", "rssi"), test=lambda v: float(v) > -3.0))
+    json_latest.add(
+        CountStatistic(
+            "strong_accepted_messages",
+            key=("metadata", "rssi"),
+            test=lambda v: float(v) > -3.0,
+        )
+    )
     json_latest.add(AverageStatistic("avg_accepted_rssi", key=("metadata", "rssi")))
     json_latest.add(MaxStatistic("peak_accepted_rssi", key=("metadata", "rssi")))
     json_latest.add(MinStatistic("min_accepted_rssi", key=("metadata", "rssi")))
     json_latest.add(UniqueStatistic("total_tracks"))
     json_latest.add(UniqueStatistic("tracks_with_position", key="position"))
-    json_latest.add(UniqueStatistic("airborne_tracks", key="airground_state", test="airborne"))
-    json_latest.add(UniqueStatistic("ground_tracks", key="airground_state", test="ground"))
-    json_latest.add(UniqueStatistic("supersonic_tracks", key="airground_state", test="supersonic"))
-    json_latest.add(UniqueStatistic("adsb_tracks", key="address_qualifier", test="adsb"))
-    json_latest.add(UniqueStatistic("tisb_tracks", key="address_qualifier", test="tisb"))
-    json_latest.add(UniqueStatistic("vehicle_tracks", key="address_qualifier", test="vehicle"))
-    json_latest.add(UniqueStatistic("beacon_tracks", key="address_qualifier", test="beacon"))
-    json_latest.add(UniqueStatistic("adsr_tracks", key="address_qualifier", test="adsr"))
+    json_latest.add(
+        UniqueStatistic("airborne_tracks", key="airground_state", test="airborne")
+    )
+    json_latest.add(
+        UniqueStatistic("ground_tracks", key="airground_state", test="ground")
+    )
+    json_latest.add(
+        UniqueStatistic("supersonic_tracks", key="airground_state", test="supersonic")
+    )
+    json_latest.add(
+        UniqueStatistic("adsb_tracks", key="address_qualifier", test="adsb")
+    )
+    json_latest.add(
+        UniqueStatistic("tisb_tracks", key="address_qualifier", test="tisb")
+    )
+    json_latest.add(
+        UniqueStatistic("vehicle_tracks", key="address_qualifier", test="vehicle")
+    )
+    json_latest.add(
+        UniqueStatistic("beacon_tracks", key="address_qualifier", test="beacon")
+    )
+    json_latest.add(
+        UniqueStatistic("adsr_tracks", key="address_qualifier", test="adsr")
+    )
 
     try:
         origin = (float(environ["LAT"]), float(environ["LON"]))
