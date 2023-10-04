@@ -5,6 +5,13 @@ set -eo pipefail
 
 sleep 5
 
+# patch skyaware978 to remove the "v=2?" from the URL
+sed -i 's/v=2?//g' /usr/share/dump978-fa/html/index.html
+sed -i 's/flightFeederCheck();//g' /usr/share/dump978-fa/html/script.js
+sed -i 's/setStatsLink();//g' /usr/share/dump978-fa/html/script.js
+sed -i 's/<button id="stats_page_button" class="stats_button">Go to My ADS-B Statistics Page<\/button>//g' /usr/share/dump978-fa/html/index.html
+
+
 if [[ -n "${LON}" ]] && [[ -n "${LAT}" ]]; then
     optstr="--lat ${LAT} --lon ${LON}"
 fi
