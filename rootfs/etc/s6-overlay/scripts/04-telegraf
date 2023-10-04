@@ -207,3 +207,6 @@ if [[ -z "$INFLUXDB_SKIP_AIRCRAFT" ]]; then
 
   } > "$INPUT_JSON_CONFIG_FILE"
 fi
+
+touch /run/stats/stats.json
+touch /run/stats/polar_range.influx
