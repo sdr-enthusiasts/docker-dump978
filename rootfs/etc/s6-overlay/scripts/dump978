@@ -12,6 +12,14 @@ DUMP978_CMD+=("--json-port" "0.0.0.0:30979")
 
 DUMP978_CMD+=("--format" "CS8")
 
+# Ensure viewadsb exists:
+if [[ ! -f /usr/local/bin/viewadsb ]]; then
+    echo '#!/bin/bash' > /usr/local/bin/viewadsb
+    # shellcheck disable=SC2145
+    echo '/usr/bin/readsb --interactive --net --net-only --net-connector 127.0.0.1,30978,uat_in $@' >> /usr/local/bin/viewadsb
+    chmod a+x /usr/local/bin/viewadsb
+fi
+
 # Handle "--sdr"
 if [[ -n "${DUMP978_DEVICE_TYPE:-rtlsdr}" ]]; then
     case "${DUMP978_DEVICE_TYPE:-rtlsdr}" in
