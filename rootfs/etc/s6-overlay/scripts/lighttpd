@@ -12,17 +12,15 @@ chown -R nobody /var/log/lighttpd
 
 # Launch webapp unless disabled
 if [[ -z "$DISABLE_WEBAPP" ]]; then
-    s6-setuidgid nobody /usr/sbin/lighttpd -tt -f /etc/lighttpd/lighttpd.conf || exit 0
-
+    s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args s6-setuidgid nobody /usr/sbin/lighttpd -tt -f /etc/lighttpd/lighttpd.conf || exit 0
     set -eo pipefail
 
     #shellcheck disable=SC2016
-    s6-setuidgid nobody /usr/sbin/lighttpd \
+    s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args s6-setuidgid nobody /usr/sbin/lighttpd \
         -f /etc/lighttpd/lighttpd.conf \
-        -D \
-        2>&1 | stdbuf -o0 awk '{print "[lighttpd] " strftime("%Y/%m/%d %H:%M:%S", systime()) " " $0}'
+        -D 
 
 # If webapp disabled, sleep forever
 else
-    sleep 86400
+    sleep infinity
 fi

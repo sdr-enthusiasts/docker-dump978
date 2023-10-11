@@ -22,11 +22,18 @@ if [[ "$DUMP978_DEVICE_TYPE" == "rtlsdr" ]]; then
     # If we have more than one device, we need a serial number
     if [[ "$num_devices" -gt 1 ]]; then
         if [[ -z "$DUMP978_RTLSDR_DEVICE" ]]; then
-            echo -e "${NOCOLOR}ERROR: Multiple RTL-SDR devices present. Please set DUMP978_RTLSDR_DEVICE!${LIGHTRED}"
+            s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args echo -e "${NOCOLOR}ERROR: Multiple RTL-SDR devices present. Please set DUMP978_RTLSDR_DEVICE!${LIGHTRED}"
             EXITCODE=1
         fi
     fi
     rm "$biast_tempfile"
+fi
+
+# Ensure viewadsb exists:
+if [[ ! -f /usr/local/bin/viewadsb ]]; then
+    echo '#!/bin/bash' > /usr/local/bin/viewadsb
+    echo '/usr/bin/readsb --interactive --net --net-only --net-connector 127.0.0.1,30978,uat_in $@' >> /usr/local/bin/viewadsb
+    chmod a+x /usr/local/bin/viewadsb
 fi
 
 exit $EXITCODE
