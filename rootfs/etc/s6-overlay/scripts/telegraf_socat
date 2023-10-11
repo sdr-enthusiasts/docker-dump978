@@ -19,9 +19,8 @@ if [ -z "$INFLUXDB_SKIP_AIRCRAFT" ] && { [ -n "$INFLUXDBURL" ] || [ -n "$ENABLE_
   SOCAT_CMD+=("TCP:localhost:33979")
 
   # shellcheck disable=SC2016
-  "${SOCAT_BIN}" "${SOCAT_CMD[@]}" \
-    2>&1 | stdbuf -o0 awk '{print "[telegraf_socat] " $0}'
+  s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args "${SOCAT_BIN}" "${SOCAT_CMD[@]}" 
 
 else
-  sleep 86400
+  sleep infinity
 fi

@@ -6,11 +6,10 @@ set -eo pipefail
 if [[ -n "$INFLUXDBURL" ]] || [ -n "$ENABLE_PROMETHEUS" ]; then
 
   #shellcheck disable=SC2016
-  telegraf \
+  exec s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args telegraf \
     --config /etc/telegraf/telegraf.conf \
     --config-directory /etc/telegraf/telegraf.d \
-    2>&1 | stdbuf -o0 awk '{print "[telegraf] " $0}'
 
 else
-  sleep 86400
+  sleep infinity
 fi

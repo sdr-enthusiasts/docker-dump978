@@ -11,13 +11,12 @@ if [[ -n "$DUMP978_SDR_GAIN" ]]; then
 
         # Run autogain
         #shellcheck disable=SC2016
-        bash /scripts/autogain.sh 2>&1 | stdbuf -o0 awk '{print "[autogain] " strftime("%Y/%m/%d %H:%M:%S", systime()) " " $0}'
-
+        s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args bash /scripts/autogain.sh
         # Sleep for 15 mins
         sleep "$AUTOGAIN_SERVICE_PERIOD"
 
     fi
 
 else
-    sleep 86400
+    sleep infinity
 fi

@@ -56,7 +56,7 @@ else
 fi
 
 ##### Service Death Counts #####
-#shellcheck disable=SC2206
+# shellcheck disable=SC2207
 services=($(find /etc/services.d/* -type d | awk -F'/' '{print $4}'| xargs))
 
 # For each service...
