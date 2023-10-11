@@ -6,4 +6,4 @@ set -eo pipefail
 sleep 2
 
 # shellcheck disable=SC2016
-s6wrap --quiet --timestamps --prepend="readsb" --args readsb --net-only --net --quiet --net-connector 127.0.0.1,30978,uat_in --net-ro-port 37981 --net-bo-port 37982
+s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args readsb --net-only --net --quiet --net-connector 127.0.0.1,30978,uat_in --net-ro-port 37981 --net-bo-port 37982
