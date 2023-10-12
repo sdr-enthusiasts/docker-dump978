@@ -17,5 +17,5 @@ READSB_ARGS+=("--net-bo-port 37982")
 
 "${s6wrap[@]}" echo "invoking: ${READSB_BIN} ${READSB_ARGS[*]}"
 
-# shellcheck disable=SC2016
-"${s6wrap[@]}" "$READSB_BIN" "${READSB_ARGS[@]}"
+# shellcheck disable=SC2068
+exec "${s6wrap[@]}" $READSB_BIN ${READSB_ARGS[@]}

@@ -63,7 +63,7 @@ fi
 
 set -eo pipefail
 "${s6wrap[@]}" echo "invoking: ${DUMP978_BIN} ${DUMP978_CMD[*]}"
-# shellcheck disable=SC2016
-exec "${s6wrap[@]}" "${DUMP978_BIN}" "${DUMP978_CMD[@]}"
+# shellcheck disable=SC2068
+exec "${s6wrap[@]}" ${DUMP978_BIN} ${DUMP978_CMD[@]}
 
 sleep 5

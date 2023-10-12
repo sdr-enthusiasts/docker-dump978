@@ -27,5 +27,5 @@ if [[ -n "${LON}" ]] && [[ -n "${LAT}" ]]; then
 fi
 
 "${s6wrap[@]}" echo "invoking: $SKY_BIN ${SKY_ARGS[*]}"
-# shellcheck disable=SC2016,SC2086
-"${s6wrap[@]}" "$SKY_BIN" "${SKY_ARGS[@]}"
+# shellcheck disable=SC2068
+"${s6wrap[@]}" $SKY_BIN ${SKY_ARGS[@]}
