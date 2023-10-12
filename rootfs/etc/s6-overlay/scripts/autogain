@@ -25,6 +25,7 @@ READSB_AUTOGAIN_INITIAL_TIMEPERIOD="${READSB_AUTOGAIN_INITIAL_TIMEPERIOD:-14400}
 
 if [[ "${READSB_SDR_GAIN,,}" != "autogain" ]]; then
     # Autogain is not enabled, so let's do nothing forever
+    s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Gain is set to ${READSB_SDR_GAIN}; autogain disabled."
     exec sleep infinity
 fi
 
@@ -40,19 +41,19 @@ fi
 
 # Do special things if it's the first time AUTOGAIN is running
 if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
-    s6wrap --quiet --prepend=autogain --timestamps --args echo "Autogain initialization started. We'll collect data every $READSB_AUTOGAIN_INITIAL_INTERVAL secs for $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / 60 )) minutes to do an initial gain assessment."
+    s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization started. We'll collect data every $READSB_AUTOGAIN_INITIAL_INTERVAL secs for $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / 60 )) minutes to do an initial gain assessment."
     # run autogain every $READSB_AUTOGAIN_INITIAL_INTERVAL secs for $READSB_AUTOGAIN_INITIAL_TIMEPERIOD secs
     for (( i=0; i<$(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )); i++ ))
     do
         sleep "$READSB_AUTOGAIN_INITIAL_INTERVAL" & wait $!  # sleep first to give readsb the opportunity to collect some initial data
-        s6wrap --quiet --prepend=autogain --timestamps --args /usr/local/bin/autogain978
+        s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978
     done
     touch /var/globe_history/autogain/autogain_initialized
 fi
 
-s6wrap --quiet --prepend=autogain --timestamps --args echo "Autogain long-term maintenance started. We'll collect data and assess every $(( READSB_AUTOGAIN_SUBSEQUENT_INTERVAL / 60 )) minutes if gain needs to be adjusted."
+s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain long-term maintenance started. We'll collect data and assess every $(( READSB_AUTOGAIN_SUBSEQUENT_INTERVAL / 60 )) minutes if gain needs to be adjusted."
 while true
 do
     sleep "$READSB_AUTOGAIN_SUBSEQUENT_INTERVAL" & wait $!
-    s6wrap --quiet --prepend=autogain --timestamps --args /usr/local/bin/autogain978
+    s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978
 done

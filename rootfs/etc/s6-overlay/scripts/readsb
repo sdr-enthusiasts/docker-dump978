@@ -3,7 +3,19 @@
 
 set -eo pipefail
 
+s6wrap=(s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args)
+
 sleep 2
 
+READSB_BIN="readsb"
+READSB_ARGS=("--net-only")
+READSB_ARGS+=("--net")
+READSB_ARGS+=("--quiet")
+READSB_ARGS+=("--net-connector 127.0.0.1,30978,uat_in")
+READSB_ARGS+=("--net-ro-port 37981")
+READSB_ARGS+=("--net-bo-port 37982")
+
+"${s6wrap[@]}" echo "invoking: ${READSB_BIN} ${READSB_ARGS[*]}"
+
 # shellcheck disable=SC2016
-s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args readsb --net-only --net --quiet --net-connector 127.0.0.1,30978,uat_in --net-ro-port 37981 --net-bo-port 37982
+"${s6wrap[@]}" "$READSB_BIN" "${READSB_ARGS[@]}"
