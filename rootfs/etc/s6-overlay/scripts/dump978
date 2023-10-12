@@ -47,8 +47,15 @@ if [[ -n "$DUMP978_SDR_AGC" ]]; then
 fi
 
 # Handle "--sdr-gain"
-if [[ -e "$GAIN_VALUE_FILE" ]]; then
-    DUMP978_CMD+=("--sdr-gain $(cat "$GAIN_VALUE_FILE")")
+READSB_SDR_GAIN="${DUMP978_SDR_GAIN:-${READSB_SDR_GAIN}}"
+if [[ -n "$READSB_SDR_GAIN" ]]; then
+    if [[ "${READSB_SDR_GAIN,,}" == "autogain" ]] && [[ -f /var/globe_history/autogain/gain ]]; then
+        read -r gain < /var/globe_history/autogain/gain
+        READSB_CMD+=("--sdr-gain $gain") 
+    elif [[ -n "$READSB_SDR_GAIN" ]]; then
+        [[ "${READSB_SDR_GAIN,,}" == "autogain" ]] && gain="49.6" || gain="${READSB_SDR_GAIN}"
+        READSB_CMD+=("--sdr-gain $gain")
+    fi
 fi
 
 # Handle "--sdr-ppm"

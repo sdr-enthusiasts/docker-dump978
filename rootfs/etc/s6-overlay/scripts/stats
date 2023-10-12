@@ -6,4 +6,4 @@ set -eo pipefail
 sleep 5
 
 # shellcheck disable=SC2016
-s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args python3 -u /scripts/stats.py
+s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args python3 -u /scripts/stats.py 2>/dev/null
