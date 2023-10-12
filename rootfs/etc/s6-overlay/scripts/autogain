@@ -1,22 +1,58 @@
 #!/command/with-contenv bash
-#shellcheck shell=bash
+# shellcheck shell=bash disable=SC1091,SC2076
 
-# If gain is specified...
-if [[ -n "$DUMP978_SDR_GAIN" ]]; then
+source /scripts/common
 
-    # If the user wants to use the autogain system...
-    if [[ "$DUMP978_SDR_GAIN" == "autogain" ]]; then
+trap 'pkill -P $$ || true; exit 0' SIGTERM SIGINT SIGHUP SIGQUIT
 
-        set -eo pipefail
+# Autogain routine
+#
+# Relevant env variables:
+#   DUMP978_GAIN or READSB_GAIN: set to "autogain" to enable autogain
+#   DUMP978_AUTOGAIN_INITIAL_INTERVAL or READSB_AUTOGAIN_INITIAL_INTERVAL: time in seconds to run autogain during initial assessment period; 600 (=10 minutes)
+#   DUMP978_AUTOGAIN_SUBSEQUENT_INTERVAL or READSB_AUTOGAIN_SUBSEQUENT_INTERVAL: time in seconds to run autogain during initial assessment period; 86400 (=1 day)
+#   DUMP978_AUTOGAIN_INITIAL_TIMEPERIOD or READSB_AUTOGAIN_INITIAL_TIMEPERIOD: time in seconds that the initial gain assessment will last. Default 14400 (=4 hours)
+# Command to restart autogain: docker exec -it dump978 /usr/local/bin/autogain978 reset
 
-        # Run autogain
-        #shellcheck disable=SC2016
-        s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args bash /scripts/autogain.sh
-        # Sleep for 15 mins
-        sleep "$AUTOGAIN_SERVICE_PERIOD"
+READSB_AUTOGAIN_INITIAL_INTERVAL="${DUMP978_AUTOGAIN_INITIAL_INTERVAL:-${READSB_AUTOGAIN_INITIAL_INTERVAL}}"
+READSB_AUTOGAIN_SUBSEQUENT_INTERVAL="${DUMP978_AUTOGAIN_SUBSEQUENT_INTERVAL:-${READSB_AUTOGAIN_SUBSEQUENT_INTERVAL}}"
+READSB_AUTOGAIN_INITIAL_TIMEPERIOD="${DUMP978_AUTOGAIN_INITIAL_TIMEPERIOD:-${READSB_AUTOGAIN_INITIAL_TIMEPERIOD}}"
+READSB_SDR_GAIN="${DUMP978_SDR_GAIN:-${READSB_SDR_GAIN}}"
 
-    fi
+READSB_AUTOGAIN_INITIAL_INTERVAL="${READSB_AUTOGAIN_INITIAL_INTERVAL:-600}" # default 10 mins
+READSB_AUTOGAIN_SUBSEQUENT_INTERVAL="${READSB_AUTOGAIN_SUBSEQUENT_INTERVAL:-86400}" # default 1 day
+READSB_AUTOGAIN_INITIAL_TIMEPERIOD="${READSB_AUTOGAIN_INITIAL_TIMEPERIOD:-14400}" # default 4 hours
 
-else
-    sleep infinity
+if [[ "${READSB_SDR_GAIN,,}" != "autogain" ]]; then
+    # Autogain is not enabled, so let's do nothing forever
+    exec sleep infinity
 fi
+
+mkdir -p /var/globe_history/autogain
+
+if [[ ! -f /run/stats/stats.json ]]; then
+    s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Waiting for the initial stats to be generated"
+    while [[ ! -f /run/stats/stats.json ]]; do
+        sleep 15
+    done
+    s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Stats are now available; proceding with autogain"
+fi
+
+# Do special things if it's the first time AUTOGAIN is running
+if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
+    s6wrap --quiet --prepend=autogain --timestamps --args echo "Autogain initialization started. We'll collect data every $READSB_AUTOGAIN_INITIAL_INTERVAL secs for $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / 60 )) minutes to do an initial gain assessment."
+    # run autogain every $READSB_AUTOGAIN_INITIAL_INTERVAL secs for $READSB_AUTOGAIN_INITIAL_TIMEPERIOD secs
+    for (( i=0; i<$(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )); i++ ))
+    do
+        sleep "$READSB_AUTOGAIN_INITIAL_INTERVAL" & wait $!  # sleep first to give readsb the opportunity to collect some initial data
+        s6wrap --quiet --prepend=autogain --timestamps --args /usr/local/bin/autogain978
+    done
+    touch /var/globe_history/autogain/autogain_initialized
+fi
+
+s6wrap --quiet --prepend=autogain --timestamps --args echo "Autogain long-term maintenance started. We'll collect data and assess every $(( READSB_AUTOGAIN_SUBSEQUENT_INTERVAL / 60 )) minutes if gain needs to be adjusted."
+while true
+do
+    sleep "$READSB_AUTOGAIN_SUBSEQUENT_INTERVAL" & wait $!
+    s6wrap --quiet --prepend=autogain --timestamps --args /usr/local/bin/autogain978
+done

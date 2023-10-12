@@ -1,0 +1,158 @@
+#!/command/with-contenv bash
+# shellcheck shell=bash disable=SC1091
+
+# This script is only for dump978 autogain
+
+source /scripts/common
+
+low="${READSB_AUTOGAIN_LOW_PCT:-2.5}"
+high="${READSB_AUTOGAIN_HIGH_PCT:-6.0}"
+gain_array=(0.0 0.9 1.4 2.7 3.7 7.7 8.7 12.5 14.4 15.7 16.6 19.7 20.7 22.9 25.4 28.0 29.7 32.8 33.8 36.4 37.2 38.6 40.2 42.1 43.4 43.9 44.5 48.0 49.6 -10)
+autogain_dir="/var/globe_history/autogain"
+mkdir -p $autogain_dir
+touch $autogain_dir/strong $autogain_dir/total
+
+
+#work around stupid locale stuff
+export LC_ALL=C
+
+stats=/run/stats/stats.json
+
+if [[ "$1" == "reset" ]]; then
+    echo "Reset AutoGain - restarting with initial values and initialization process"
+    rm -f $autogain_dir/* >/dev/null 2>&1
+    pkill -f "s6-supervise autogain"
+    pkill -f "/usr/local/bin/readsb"
+    exit 0
+fi
+ 
+if ! [[ -f $stats ]]; then
+    echo "stats.json not found, is the decoder running?"
+    exit 1
+fi
+
+oldstrong=$(cat $autogain_dir/strong 2>/dev/null)
+oldtotal=$(cat $autogain_dir/total 2>/dev/null)
+if [[ -z $oldstrong ]] || [[ -z $oldtotal ]]; then
+	oldstrong=0
+	oldtotal=0
+fi
+
+if [[ "$(jq .total.strong_accepted_messages $stats 2>/dev/null)" == "null" ]]; then
+    echo "the decoder doesn't seem to be using an rtl-sdr device, can't help with that."
+    exit 1
+fi
+
+# start=$(jq '.total.start' < $stats)
+# end=$(jq '.total.end' < $stats)
+
+strong=$(jq '.total.strong_accepted_messages' $stats | tee $autogain_dir/strong)
+total=$(jq '.total.total_accepted_messages' $stats | tee $autogain_dir/total)
+
+if [[ -z $strong ]] || [[ -z $total ]]; then
+    echo "unrecognized format: $stats"
+    exit 1
+fi
+
+if ! awk "BEGIN{ exit  ($total < 1000) }"; then
+    echo "The decoder hasn't been running long enough, wait a bit!"
+    exit 0
+fi
+
+
+if (( oldtotal > total )) || (( oldstrong > strong )) || (( oldtotal == total )); then
+	oldstrong=0
+	oldtotal=0
+fi
+
+echo "strong - $strong; oldstrong - $oldstrong; total - $total; oldtotal - $oldtotal"
+
+strong=$((strong - oldstrong))
+total=$((total - oldtotal))
+
+if [[ $total == 0 ]]; then
+    percent=0
+else
+    percent=$(awk "BEGIN {printf \"%.3f\", $strong * 100 / $total}")
+fi
+
+strong=$percent
+
+if [[ $strong == "nan" ]]; then echo "Error, can't automatically adjust gain!"; exit 1; fi
+
+
+# Get the gain -- updated for docker-tar1090 use by kx1t
+if [[ ! -f $autogain_dir/gain ]]; then
+    oldgain="${READSB_AUTOGAIN_INITIAL_GAIN:-49.6}"
+    echo "$oldgain" > $autogain_dir/gain
+    echo "Initial run. Starting point for adjusting gain is $oldgain"
+else
+    read -r oldgain < $autogain_dir/gain
+    oldgain="${oldgain:-49.6}"    # needed for stupidity reasons
+fi
+
+gain_index=28
+for i in "${!gain_array[@]}"; do
+    if ! awk "BEGIN{ exit  (${oldgain} <= ${gain_array[$i]}) }"; then
+        gain_index="${i}"
+        break
+    fi
+done
+
+if ! awk "BEGIN{ exit  (${oldgain} > 49.6) }"; then
+    gain_index=28
+fi
+
+if [[ "$oldgain" == "-10" ]]; then
+    gain_index=28
+fi
+
+
+if ! awk "BEGIN{ exit ($strong > $low) }" && ! awk "BEGIN{ exit ($strong < $high) }"; then
+	echo "No gain change needed, ${strong}% percentage of messages >-3dB is in nominal range. (${low}% < ${strong}% < ${high}%)"
+	action=DoNothing
+
+fi
+
+if ! awk "BEGIN{ exit ($strong < $low) }" && [[ $gain_index == 28 ]]; then
+    echo "Could have used some more gain, but gain is already at maximum! Strong (>-3dB) messages ${strong}% < ${low}%"
+    exit 0
+fi
+
+if ! awk "BEGIN{ exit ($strong < $low) }"; then
+    gain_index=$((gain_index+1))
+    action=Increasing
+fi
+
+if ! awk "BEGIN{ exit ($strong > $high) }" && [[ $gain_index == 0 ]]; then
+    echo "Could have used some lower gain, but gain already at minimum! Strong (>-3dB) messages ${strong}% > ${high}%"
+    action=DoNothing
+fi
+
+if ! awk "BEGIN{ exit ($strong > $high) }"; then
+    gain_index=$((gain_index-1))
+    action=Decreasing
+fi
+
+gain="${gain_array[$gain_index]}"
+
+if [[ $gain == "" ]] || [[ $gain == "-10" ]]; then
+    echo "Could have used some more gain, but gain is already at maximum! Strong (>-3dB) messages ${strong}% < ${low}%"
+    action=DoNothing
+fi
+
+if [[ "$action" == "DoNothing" ]]; then exit 0; fi
+
+# Set the gain
+echo "$gain" > $autogain_dir/gain
+pkill -f /usr/local/bin/dump978-fa
+
+#reset numbers
+echo 0 > $autogain_dir/strong
+echo 0 > $autogain_dir/total
+
+if [[ "$action" == "Increasing" ]]; then
+    echo "Increasing gain to $gain (${strong}% messages >-3dB exceed lower boundary of ${low}%)"
+elif [[ "$action" == "Decreasing" ]]; then
+    echo "Decreasing gain to $gain (${strong}% messages >-3dB exceed upper boundary of ${high}%)"
+fi
