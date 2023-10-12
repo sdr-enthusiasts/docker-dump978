@@ -58,7 +58,7 @@ AUTOGAIN_STATS_TRACKS_NEW_FILE="/run/autogain/autogain_stats.tracks_new"
 AUTOGAIN_INTERVAL_FILE="/run/autogain/autogain_interval"
 # results for init stage
 AUTOGAIN_RESULTS_FILE="/run/autogain/autogain_results"
-# previos stats files - allows stats to persist through container restart
+# previous stats files - allows stats to persist through container restart
 AUTOGAIN_STATS_PREVIOUS_MAX_DISTANCE_FILE="/run/autogain/autogain_stats_current.max_distance"
 AUTOGAIN_STATS_PREVIOUS_LOCAL_STRONG_MSGS_FILE="/run/autogain/autogain_stats_current.local_strong_msgs"
 AUTOGAIN_STATS_PREVIOUS_LOCAL_ACCEPTED_MSGS_FILE="/run/autogain/autogain_stats_current.local_accepted"
@@ -521,7 +521,7 @@ function autogain_change_into_state () {
         echo "$AUTOGAIN_MIN_GAIN_VALUE" > "$AUTOGAIN_MIN_GAIN_VALUE_FILE"
     fi
 
-    # If state isnt finished, then set gain to max
+    # If state isn't finished, then set gain to max
     if [[ ! "$1" == "finished" ]]; then
 
         # We should already be at max gain, check to make sure (maybe user wants to re-run autogain from scratch)

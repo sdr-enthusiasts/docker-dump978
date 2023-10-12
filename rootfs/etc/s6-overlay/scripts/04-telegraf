@@ -200,7 +200,7 @@ if [[ -z "$INFLUXDB_SKIP_AIRCRAFT" ]]; then
     ## metric.
     echo "json_time_key = \"metadata_received_at\""
 
-    ## Time format is the time layout that should be used to interprete the
+    ## Time format is the time layout that should be used to interpret the
     ## json_time_key.  The time must be `unix`, `unix_ms` or a time in the
     ## "reference time".
     echo "json_time_format =\"unix\""

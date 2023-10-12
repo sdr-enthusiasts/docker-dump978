@@ -18,7 +18,7 @@ if [[ -z "$DISABLE_WEBAPP" ]]; then
     #shellcheck disable=SC2016
     s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args s6-setuidgid nobody /usr/sbin/lighttpd \
         -f /etc/lighttpd/lighttpd.conf \
-        -D 
+        -D
 
 # If webapp disabled, sleep forever
 else

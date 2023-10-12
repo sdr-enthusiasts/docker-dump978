@@ -95,7 +95,7 @@ class AverageStatistic(BaseStatistic):
 
 
 class CountStatistic(BaseStatistic):
-    """Used for statistics that count occurences over time"""
+    """Used for statistics that count occurrences over time"""
 
     def __init__(self, name, key=None, test=None):
         self._key = key
@@ -243,7 +243,7 @@ class RangeStatistic(BaseStatistic):
 
 
 class UniqueStatistic(BaseStatistic):
-    """Used for statistics that count unique occurences over time"""
+    """Used for statistics that count unique occurrences over time"""
 
     def __init__(self, name, key=None, test=None):
         self._key = key
@@ -419,7 +419,7 @@ def main():
     print("Waiting for /run/stats/stats.json to be created...")
     while True:
         try:
-            with open("/run/stats/stats.json", "r") as f:
+            with open("/run/stats/stats.json", "r") as _:
                 break
         except FileNotFoundError:
             pass
@@ -431,7 +431,7 @@ def main():
 
     while True:
         try:
-            with open("/run/stats/polar_range.influx", "r") as f:
+            with open("/run/stats/polar_range.influx", "r") as _:
                 break
         except FileNotFoundError:
             pass
