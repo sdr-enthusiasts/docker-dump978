@@ -148,7 +148,11 @@ if [[ "$action" == "DoNothing" ]]; then exit 0; fi
 
 # Set the gain
 echo "$gain" > $autogain_dir/gain
+
+# restart the services
 pkill -f /usr/local/bin/dump978-fa
+rm -f /run/stats/stats.json || true
+pkill -f python3 -u /scripts/stats.py
 
 #reset numbers
 echo 0 > $autogain_dir/strong
