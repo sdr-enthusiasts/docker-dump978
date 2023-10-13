@@ -68,6 +68,12 @@ if [[ -n "$DUMP978_JSON_STDOUT" ]]; then
     DUMP978_CMD+=("--json-stdout")
 fi
 
+# do some stuff "just in case"
+mkdir -p /run/stats
+touch /run/stats/stats.json
+touch /run/stats/polar_range.influx
+
+# start dump978-fa
 set -eo pipefail
 "${s6wrap[@]}" echo "invoking: ${DUMP978_BIN} ${DUMP978_CMD[*]}"
 # shellcheck disable=SC2068

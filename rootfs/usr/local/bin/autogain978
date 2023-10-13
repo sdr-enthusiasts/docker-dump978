@@ -23,8 +23,10 @@ if [[ "$1" == "reset" ]]; then
     rm -f $autogain_dir/* >/dev/null 2>&1
     pkill -f "s6-supervise autogain"
     pkill -f "/usr/local/bin/dump978-fa"
-    rm -f /run/stats/stats.json || true
+    rm -f /run/stats/* || true
     pkill -f "python3 -u /scripts/stats.py"
+    touch /run/stats/stats.json
+    touch /run/stats/polar_range.influx
     exit 0
 fi
  
