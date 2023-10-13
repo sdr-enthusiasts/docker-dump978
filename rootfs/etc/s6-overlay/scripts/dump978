@@ -68,9 +68,12 @@ if [[ -n "$DUMP978_JSON_STDOUT" ]]; then
     DUMP978_CMD+=("--json-stdout")
 fi
 
+# Before starting, make sure that the stats are reset. Otherwise autogain will use stale data:
+rm -f /run/stats/stats.json || true
+
 set -eo pipefail
 "${s6wrap[@]}" echo "invoking: ${DUMP978_BIN} ${DUMP978_CMD[*]}"
 # shellcheck disable=SC2068
-exec "${s6wrap[@]}" ${DUMP978_BIN} ${DUMP978_CMD[@]}
+exec "${s6wrap[@]}" ${DUMP978_BIN} ${DUMP978_CMD[@]} 
 
 sleep 5
