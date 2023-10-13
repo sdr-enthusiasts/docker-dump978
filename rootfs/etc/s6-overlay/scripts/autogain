@@ -21,7 +21,7 @@ READSB_SDR_GAIN="${DUMP978_SDR_GAIN:-${READSB_SDR_GAIN}}"
 
 READSB_AUTOGAIN_INITIAL_INTERVAL="${READSB_AUTOGAIN_INITIAL_INTERVAL:-600}" # default 10 mins
 READSB_AUTOGAIN_SUBSEQUENT_INTERVAL="${READSB_AUTOGAIN_SUBSEQUENT_INTERVAL:-86400}" # default 1 day
-READSB_AUTOGAIN_INITIAL_TIMEPERIOD="${READSB_AUTOGAIN_INITIAL_TIMEPERIOD:-14400}" # default 4 hours
+READSB_AUTOGAIN_INITIAL_TIMEPERIOD="${READSB_AUTOGAIN_INITIAL_TIMEPERIOD:-21600}" # default 6 hours
 
 if [[ "${READSB_SDR_GAIN,,}" != "autogain" ]]; then
     # Autogain is not enabled, so let's do nothing forever
@@ -47,7 +47,8 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
     do
         sleep "$READSB_AUTOGAIN_INITIAL_INTERVAL" & wait $!  # sleep first to give readsb the opportunity to collect some initial data
         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization run $i of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL ))..."
-        s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978 || true
+        s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978
+        if [[ "$?" == "99" ]]; then ((i--)); fi
     done
     touch /var/globe_history/autogain/autogain_initialized
 fi

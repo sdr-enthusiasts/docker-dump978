@@ -32,7 +32,7 @@ fi
  
 if ! [[ -f $stats ]]; then
     echo "stats.json not found, is the decoder running?"
-    exit 1
+    exit 99
 fi
 
 oldstrong=$(cat $autogain_dir/strong 2>/dev/null)
@@ -55,12 +55,12 @@ total=$(jq '.total.total_accepted_messages' $stats | tee $autogain_dir/total)
 
 if [[ -z $strong ]] || [[ -z $total ]]; then
     echo "$stats: not yet ready. Skipping this $(basename "$0") run"
-    exit 0
+    exit 99
 fi
 
 if ! awk "BEGIN{ exit  ($total < 1000) }"; then
     echo "Total messages $total < 1000 - the decoder hasn't been running long enough. Skipping this $(basename "$0") run"
-    exit 0
+    exit 99
 fi
 
 
