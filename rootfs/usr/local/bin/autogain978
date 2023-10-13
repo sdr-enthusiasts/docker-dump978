@@ -22,7 +22,9 @@ if [[ "$1" == "reset" ]]; then
     echo "Reset AutoGain - restarting with initial values and initialization process"
     rm -f $autogain_dir/* >/dev/null 2>&1
     pkill -f "s6-supervise autogain"
-    pkill -f "/usr/local/bin/dump978"
+    pkill -f "/usr/local/bin/dump978-fa"
+    rm -f /run/stats/stats.json || true
+    pkill -f "python3 -u /scripts/stats.py"
     exit 0
 fi
  
@@ -65,12 +67,12 @@ if (( oldtotal > total )) || (( oldstrong > strong )) || (( oldtotal == total ))
 	oldtotal=0
 fi
 
-echo  "strong - $strong; oldstrong - $oldstrong; total - $total; oldtotal - $oldtotal; "
+#debug echo  "strong - $strong; oldstrong - $oldstrong; total - $total; oldtotal - $oldtotal; "
 
 strong=$((strong - oldstrong))
 total=$((total - oldtotal))
 
-echo "this run: strong - $strong; total - $total"
+#debug echo "this run: strong - $strong; total - $total"
 
 if [[ $total == 0 ]]; then
     percent=0
@@ -152,7 +154,7 @@ echo "$gain" > $autogain_dir/gain
 # restart the services
 pkill -f /usr/local/bin/dump978-fa
 rm -f /run/stats/stats.json || true
-pkill -f python3 -u /scripts/stats.py
+pkill -f "python3 -u /scripts/stats.py"
 
 #reset numbers
 echo 0 > $autogain_dir/strong
