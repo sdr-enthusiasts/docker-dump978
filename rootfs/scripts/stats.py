@@ -11,6 +11,7 @@ from os import environ
 import socket
 from threading import Lock, Thread
 import time
+import sys
 
 
 ###############################################################################
@@ -413,6 +414,9 @@ def parse_raw(raw_lock, raw_latest):
 
 
 def main():
+    # Don't print extensive traces
+    sys.tracebacklimit = 0
+    
     # Change the argument to adjust logging output
     logging.basicConfig(level=logging.INFO)
 

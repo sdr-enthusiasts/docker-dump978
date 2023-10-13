@@ -97,7 +97,7 @@ else
     oldgain="${oldgain:-49.6}"    # needed for stupidity reasons
 fi
 
-echo -n "oldgain - $oldgain; "
+#debug echo -n "oldgain - $oldgain; "
 
 gain_index=28
 for i in "${!gain_array[@]}"; do
@@ -115,7 +115,7 @@ if [[ "$oldgain" == "-10" ]]; then
     gain_index=28
 fi
 
-echo "before adjustment: gain_index - $gain_index; gain - ${gain_array[$gain_index]}"
+#debug echo "before adjustment: gain_index - $gain_index; gain - ${gain_array[$gain_index]}"
 
 if ((total < 1000)); then
     echo "Only $total messages since last run - skipping this one, hopefully next run the total will be >1000. Gain remains at $oldgain."
