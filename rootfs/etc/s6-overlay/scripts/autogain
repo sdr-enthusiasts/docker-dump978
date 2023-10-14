@@ -47,8 +47,7 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
     do
         sleep "$READSB_AUTOGAIN_INITIAL_INTERVAL" & wait $!  # sleep first to give readsb the opportunity to collect some initial data
         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization run $i of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL ))..."
-        s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978
-        if [[ "$?" == "99" ]]; then ((i--)); fi
+        if ! s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978; then ((i--)) || true; fi
     done
     touch /var/globe_history/autogain/autogain_initialized
 fi
