@@ -43,7 +43,7 @@ fi
 if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
     s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization started. We'll collect data every $READSB_AUTOGAIN_INITIAL_INTERVAL secs for $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / 60 )) minutes to do an initial gain assessment."
     # run autogain every $READSB_AUTOGAIN_INITIAL_INTERVAL secs for $READSB_AUTOGAIN_INITIAL_TIMEPERIOD secs
-    for (( i=0; i<$(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )); i++ ))
+    for (( i=1; i<=$(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )); i++ ))
     do
         sleep "$READSB_AUTOGAIN_INITIAL_INTERVAL" & wait $!  # sleep first to give readsb the opportunity to collect some initial data
         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization run $i of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL ))..."
