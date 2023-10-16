@@ -54,13 +54,13 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
 
         # check is adjustment time limits are enabled and if we are in the window; if we're not then sleep until we will be in the window
         if chk_enabled "$READSB_AUTOGAIN_ADJUSTMENT_LIMITS" && \
-            { (( $(date +%H%M) < ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} )) || \
-            (( $(date +%H%M) > ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME##*-} ))
+            { (( $(date +%s) < $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} today" +%s) )) || \
+            (( $(date +%s) > $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME##*-} today" +%s))
             }; then
             if (( $(date +%H%M) > ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME##*-} )); then
                 # current time is before start of window; delay until window starts
                 now_in_secs="$(date +%s)"
-                resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*}" +%s)"
+                resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} today" +%s)"
                 s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Current time outside of ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME} adjustment time window. We will delay until $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*}")"
                 sleep $((resumetime_in_secs - now_in_secs)) & wait $!
             elif (( $(date +%H%M) < ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} )); then
