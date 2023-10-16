@@ -3,17 +3,17 @@
 
 # Initialise config files, and remove existing
 OUTPUT_INFLUXDB_CONFIG_FILE="/etc/telegraf/telegraf.d/outputs_influxdb.conf"
-rm "$OUTPUT_INFLUXDB_CONFIG_FILE" > /dev/null 2>&1 || true
+rm -f "$OUTPUT_INFLUXDB_CONFIG_FILE" > /dev/null 2>&1 || true
 OUTPUT_PROMETHEUS_CONFIG_FILE="/etc/telegraf/telegraf.d/outputs_prometheus.conf"
-rm "$OUTPUT_PROMETHEUS_CONFIG_FILE" > /dev/null 2>&1 || true
+rm -f "$OUTPUT_PROMETHEUS_CONFIG_FILE" > /dev/null 2>&1 || true
 INPUT_JSON_CONFIG_FILE="/etc/telegraf/telegraf.d/inputs_socket_listener_dump978_json.conf"
-rm "$INPUT_JSON_CONFIG_FILE" > /dev/null 2>&1 || true
+rm -f "$INPUT_JSON_CONFIG_FILE" > /dev/null 2>&1 || true
 INPUT_POLAR_RANGE_DATA="/etc/telegraf/telegraf.d/inputs_polar_range.conf"
-rm "$INPUT_POLAR_RANGE_DATA" > /dev/null 2>&1 || true
+rm -f "$INPUT_POLAR_RANGE_DATA" > /dev/null 2>&1 || true
 INPUT_STATS_DATA="/etc/telegraf/telegraf.d/inputs_stats.conf"
-rm "$INPUT_STATS_DATA" > /dev/null 2>&1 || true
+rm -f "$INPUT_STATS_DATA" > /dev/null 2>&1 || true
 INPUT_AUTOGAIN_FILE="/etc/telegraf/telegraf.d/inputs_file_autogain.conf"
-rm "$INPUT_AUTOGAIN_FILE" > /dev/null 2>&1 || true
+rm -f "$INPUT_AUTOGAIN_FILE" > /dev/null 2>&1 || true
 
 if [[ -n "$ENABLE_PROMETHEUS" ]]; then
 
@@ -208,5 +208,6 @@ if [[ -z "$INFLUXDB_SKIP_AIRCRAFT" ]]; then
   } > "$INPUT_JSON_CONFIG_FILE"
 fi
 
+mkdir -p /run/stats
 touch /run/stats/stats.json
 touch /run/stats/polar_range.influx
