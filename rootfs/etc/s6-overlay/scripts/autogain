@@ -55,7 +55,7 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
         # check is adjustment time limits are enabled and if we are in the window; if we're not then sleep until we will be in the window
         if chk_enabled "$READSB_AUTOGAIN_ADJUSTMENT_LIMITS" && \
             { (( $(date +%s) < $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} today" +%s) )) || \
-            (( $(date +%s) > $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME##*-} today" +%s))
+              (( $(date +%s) > $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME##*-} today" +%s) ))
             }; then
             if (( $(date +%H%M) > ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME##*-} )); then
                 # current time is before start of window; delay until window starts
