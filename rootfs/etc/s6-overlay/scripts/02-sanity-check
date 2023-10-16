@@ -36,4 +36,9 @@ if [[ ! -f /usr/local/bin/viewadsb ]]; then
     chmod a+x /usr/local/bin/viewadsb
 fi
 
+# make sure  directories exist
+mkdir -p /run/skyaware978
+mkdir -p /run/stats
+#mkdir -p /run/autogain
+
 exit $EXITCODE
