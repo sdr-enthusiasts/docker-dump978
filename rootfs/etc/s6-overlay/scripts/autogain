@@ -66,8 +66,9 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
             elif (( $(date +%H%M) < ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} )); then
                 # current time is after close of window; delay until window starts tomorrow
                 now_in_secs="$(date +%s)"
-                resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow" +%s)"
-                s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Current time outside of ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME} adjustment time window. We will delay until $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow")"
+                resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} today" +%s)"
+                if (( resumetime_in_secs < now_in_secs )); then resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow" +%s)"; fi 
+                s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Current time outside of ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME} adjustment time window. We will delay until $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow"), in $((resumetime_in_secs - now_in_secs))s"
                 sleep "$((resumetime_in_secs - now_in_secs))s" & wait $!
             fi
         fi
