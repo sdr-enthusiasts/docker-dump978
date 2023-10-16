@@ -1,5 +1,5 @@
 #!/command/with-contenv bash
-# shellcheck shell=bash disable=SC1091,SC2076
+# shellcheck shell=bash disable=SC1091,SC2076,SC2154
 
 source /scripts/common
 
@@ -14,14 +14,18 @@ trap 'pkill -P $$ || true; exit 0' SIGTERM SIGINT SIGHUP SIGQUIT
 #   DUMP978_AUTOGAIN_INITIAL_TIMEPERIOD or READSB_AUTOGAIN_INITIAL_TIMEPERIOD: time in seconds that the initial gain assessment will last. Default 14400 (=4 hours)
 # Command to restart autogain: docker exec -it dump978 /usr/local/bin/autogain978 reset
 
+# make READSB_AUTOGAIN.... the same as DUMP978_AUTOGAIN with the latter as preferred parameter
 READSB_AUTOGAIN_INITIAL_INTERVAL="${DUMP978_AUTOGAIN_INITIAL_INTERVAL:-${READSB_AUTOGAIN_INITIAL_INTERVAL}}"
 READSB_AUTOGAIN_SUBSEQUENT_INTERVAL="${DUMP978_AUTOGAIN_SUBSEQUENT_INTERVAL:-${READSB_AUTOGAIN_SUBSEQUENT_INTERVAL}}"
 READSB_AUTOGAIN_INITIAL_TIMEPERIOD="${DUMP978_AUTOGAIN_INITIAL_TIMEPERIOD:-${READSB_AUTOGAIN_INITIAL_TIMEPERIOD}}"
+READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME="${DUMP978_AUTOGAIN_ADJUSTMENT_TIMEFRAME:-${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME}}"
 READSB_SDR_GAIN="${DUMP978_SDR_GAIN:-${READSB_SDR_GAIN}}"
+READSB_AUTOGAIN_ADJUSTMENT_LIMITS="${DUMP978_AUTOGAIN_ADJUSTMENT_LIMITS:-${READSB_AUTOGAIN_ADJUSTMENT_LIMITS}}"
 
 READSB_AUTOGAIN_INITIAL_INTERVAL="${READSB_AUTOGAIN_INITIAL_INTERVAL:-600}" # default 10 mins
 READSB_AUTOGAIN_SUBSEQUENT_INTERVAL="${READSB_AUTOGAIN_SUBSEQUENT_INTERVAL:-86400}" # default 1 day
 READSB_AUTOGAIN_INITIAL_TIMEPERIOD="${READSB_AUTOGAIN_INITIAL_TIMEPERIOD:-21600}" # default 6 hours
+READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME="${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME:-0900-1800}" # default 0900 - 1800
 
 if [[ "${READSB_SDR_GAIN,,}" != "autogain" ]]; then
     # Autogain is not enabled, so let's do nothing forever
@@ -42,10 +46,32 @@ fi
 # Do special things if it's the first time AUTOGAIN is running
 if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
     s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization started. We'll collect data every $READSB_AUTOGAIN_INITIAL_INTERVAL secs for $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / 60 )) minutes to do an initial gain assessment."
+
     # run autogain every $READSB_AUTOGAIN_INITIAL_INTERVAL secs for $READSB_AUTOGAIN_INITIAL_TIMEPERIOD secs
     for (( i=1; i<=$(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )); i++ ))
     do
         sleep "$READSB_AUTOGAIN_INITIAL_INTERVAL" & wait $!  # sleep first to give readsb the opportunity to collect some initial data
+
+        # check is adjustment time limits are enabled and if we are in the window; if we're not then sleep until we will be in the window
+        if chk_enabled "$READSB_AUTOGAIN_ADJUSTMENT_LIMITS" && \
+            { (( $(date +%H%M) < ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} )) || \
+            (( $(date +%H%M) > ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME##*-} ))
+            }; then
+            if (( $(date +%H%M) > ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME##*-} )); then
+                # current time is before start of window; delay until window starts
+                now_in_secs="$(date +%s)"
+                resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*}" +%s)"
+                s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Current time outside of ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME} adjustment time window. We will delay until $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*}")"
+                sleep $((resumetime_in_secs - now_in_secs)) & wait $!
+            elif (( $(date +%H%M) < ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} )); then
+                # current time is after close of window; delay until window starts tomorrow
+                now_in_secs="$(date +%s)"
+                resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow" +%s)"
+                s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Current time outside of ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME} adjustment time window. We will delay until $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow")"
+                sleep "$((resumetime_in_secs - now_in_secs))s" & wait $!
+            fi
+        fi
+ 
         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization run $i of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL ))..."
         if ! s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978; then ((i--)) || true; fi
     done
