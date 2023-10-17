@@ -50,24 +50,24 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
     # run autogain every $READSB_AUTOGAIN_INITIAL_INTERVAL secs for $READSB_AUTOGAIN_INITIAL_TIMEPERIOD secs
     for (( i=1; i<=$(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )); i++ ))
     do
-        sleep "$READSB_AUTOGAIN_INITIAL_INTERVAL" & wait $!  # sleep first to give readsb the opportunity to collect some initial data
-
-        # check is adjustment time limits are enabled and if we are in the window; if we're not then sleep until we will be in the window
+        # check if adjustment time limits are enabled and if we are in the window; if we're not then sleep until we will be in the window
         if chk_enabled "$READSB_AUTOGAIN_ADJUSTMENT_LIMITS" && \
         (( $(date +%s) < $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} today" +%s) )); then
-                # current time is before start of window; delay until window starts
-                now_in_secs="$(date +%s)"
-                resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} today" +%s)"
-                s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Too early: current time before ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME} adjustment time window. We will delay until $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*}"), in $((resumetime_in_secs - now_in_secs))s"
-                sleep $((resumetime_in_secs - now_in_secs)) & wait $!
+            # current time is before start of window; delay until window starts
+            now_in_secs="$(date +%s)"
+            resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} today" +%s)"
+            s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Too early: current time before ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME} adjustment time window. We will delay until $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*}"), in $((resumetime_in_secs - now_in_secs))s"
+            sleep $((resumetime_in_secs - now_in_secs)) & wait $!
          elif chk_enabled "$READSB_AUTOGAIN_ADJUSTMENT_LIMITS" && \
          (( $(date +%s) > $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME##*-} today" +%s) )); then
-                # current time is after close of window; delay until window starts tomorrow
-                now_in_secs="$(date +%s)"
-                resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} today" +%s)"
-                if (( resumetime_in_secs < now_in_secs )); then resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow" +%s)"; fi 
-                s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Too late: current time outside of ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME} adjustment time window. We will delay until $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow"), in $((resumetime_in_secs - now_in_secs))s"
-                sleep "$((resumetime_in_secs - now_in_secs))s" & wait $!
+            # current time is after close of window; delay until window starts tomorrow
+            now_in_secs="$(date +%s)"
+            resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} today" +%s)"
+            if (( resumetime_in_secs < now_in_secs )); then resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow" +%s)"; fi 
+            s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Too late: current time outside of ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME} adjustment time window. We will delay until $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow"), in $((resumetime_in_secs - now_in_secs))s"
+            sleep "$((resumetime_in_secs - now_in_secs))s" & wait $!
+        else
+            sleep "$READSB_AUTOGAIN_INITIAL_INTERVAL" & wait $!  # sleep first to give readsb the opportunity to collect some initial data
         fi
  
         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization run $i of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL ))..."

@@ -344,14 +344,14 @@ These variables control the autogain system (explained further below). These sho
 
 ## Autogain system
 
-An automatic gain adjustment system is included in this container, and can be activated by setting the environment variable `DUMP978_SDR_GAIN` to `autogain`. You should also map `/var/globe_history/` to persistant storage, otherwise the autogain system will start over each time the container is restarted. 
+An automatic gain adjustment system is included in this container, and can be activated by setting the environment variable `DUMP978_SDR_GAIN` to `autogain`. You should also map `/var/globe_history/` to persistant storage, otherwise the autogain system will start over each time the container is restarted.
 
 Autogain will take several hours to initially work out a reasonable gain. This is the so-called "initialization period", which is by default 6 hours. It will then perform a daily measurement to see if your gain needs further adjusting.
 
 The autogain system will work as follows; values are based on the default parameter settings from above:
 
 1. `dump978` is set to maximum gain.
-2. Initial results are collected every 10 minutes, for up to 6 hours (initialization phase). If `DUMP978_AUTOGAIN_ADJUSTMENT_LIMITS` is set to true, measurements are suspended if the time is outside the set time limits (0900 - 1800 local container time). Every 10 minutes, the gain is adjusted by 1 position if the average percentage of "strong" signals (>-3dB) is less than 2.5% or more than 6.0%. 
+2. Initial results are collected every 10 minutes, for up to 6 hours (initialization phase). If `DUMP978_AUTOGAIN_ADJUSTMENT_LIMITS` is set to true, measurements are suspended if the time is outside the set time limits (0900 - 1800 local container time). Every 10 minutes, the gain is adjusted by 1 position if the average percentage of "strong" signals (>-3dB) is less than 2.5% or more than 6.0%.
 3. After the initialization phase is over, the average percentage of "strong signal" is calculated on a daily basis, and an adjustment is made accordingly.
 
 ### Forcing autogain to re-run from scratch
