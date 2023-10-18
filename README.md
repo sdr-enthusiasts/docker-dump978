@@ -50,7 +50,7 @@ The container listens on the following TCP ports:
 
 | Path (inside container) | Details |
 |-------------------------|---------|
-| `/run/autogain` | Map this to persistant storage if you set `DUMP978_SDR_GAIN=autogain` |
+| `/var/globe_history` | Map this to persistant storage if you set `DUMP978_SDR_GAIN=autogain` |
 
 ## Up and Running - `docker run`
 
@@ -112,10 +112,10 @@ Here is an example `docker-compose.yml`:
       - DUMP978_SDR_PPM=${UAT_SDR_PPM}
       - AUTOGAIN_INITIAL_PERIOD=7200
     volumes:
-      - /opt/adsb/dump978/autogain:/run/autogain
+      - /opt/adsb/dump978:/var/globe_history
       - /dev:/dev:ro
     tmpfs:
-      - /run/readsb
+      - /run
 
   ultrafeeder:
     image: ghcr.io/sdr-enthusiasts/docker-adsb-ultrafeeder
