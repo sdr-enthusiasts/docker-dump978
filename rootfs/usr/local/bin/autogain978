@@ -10,6 +10,8 @@ READSB_AUTOGAIN_HIGH_PCT="${DUMP978_AUTOGAIN_HIGH_PCT:-${READSB_AUTOGAIN_HIGH_PC
 READSB_AUTOGAIN_USE_RAW="${READSB_AUTOGAIN_USE_RAW:-true}"  # if true, use raw messages instead of accepted messages 
 READSB_AUTOGAIN_MIN_SAMPLES="${READSB_AUTOGAIN_MIN_SAMPLES:-1000}"   
 
+STRONGSIGNAL_LIMIT="${2:--3.0}"
+
 low="${READSB_AUTOGAIN_LOW_PCT:-2.5}"
 high="${READSB_AUTOGAIN_HIGH_PCT:-12.0}"
 gain_array=(0.0 0.9 1.4 2.7 3.7 7.7 8.7 12.5 14.4 15.7 16.6 19.7 20.7 22.9 25.4 28.0 29.7 32.8 33.8 36.4 37.2 38.6 40.2 42.1 43.4 43.9 44.5 48.0 49.6 -10)
@@ -35,7 +37,7 @@ if [[ "$1" == "reset" ]]; then
     exit 0
 fi
  
-if ! [[ -f $stats ]]; then
+if [[ ! -f $stats ]] && [[ -z "$1" ]]; then
     echo "stats.json not found, is the decoder running?"
     exit 99
 fi
@@ -47,28 +49,32 @@ if [[ -z $oldstrong ]] || [[ -z $oldtotal ]]; then
 	oldtotal=0
 fi
 
-if chk_enabled "$READSB_AUTOGAIN_USE_RAW" && [[ "$(jq .total.strong_raw_messages $stats 2>/dev/null)" == "null" ]]; then
-    echo "the decoder doesn't seem to be using an rtl-sdr device, can't help with that."
-    exit 1
-elif [[ "$(jq .total.strong_accepted_messages $stats 2>/dev/null)" == "null" ]]; then
-    echo "the decoder doesn't seem to be using an rtl-sdr device, can't help with that."
-    exit 1
+if [[ -z "$1" ]]; then
+    # use the stats file -- don't use the commandline values since they're not there
+    if chk_enabled "$READSB_AUTOGAIN_USE_RAW" && [[ "$(jq .total.strong_raw_messages $stats 2>/dev/null)" == "null" ]]; then
+        echo "the decoder doesn't seem to be using an rtl-sdr device, can't help with that."
+        exit 1
+    elif [[ "$(jq .total.strong_accepted_messages $stats 2>/dev/null)" == "null" ]]; then
+        echo "the decoder doesn't seem to be using an rtl-sdr device, can't help with that."
+        exit 1
 
-fi
+    fi
 
-# start=$(jq '.total.start' < $stats)
-# end=$(jq '.total.end' < $stats)
-
-if chk_enabled "$READSB_AUTOGAIN_USE_RAW"; then 
-    strong=$(jq '.total.strong_raw_messages' $stats | tee $autogain_dir/strong)
-    total=$(jq '.total.total_raw_messages' $stats | tee $autogain_dir/total)
+    if chk_enabled "$READSB_AUTOGAIN_USE_RAW"; then 
+        strong="$(jq '.total.strong_raw_messages' $stats | tee $autogain_dir/strong)"
+        total="$(jq '.total.total_raw_messages' $stats | tee $autogain_dir/total)"
+    else
+        strong="$(jq '.total.strong_accepted_messages' $stats | tee $autogain_dir/strong)"
+        total="$(jq '.total.total_accepted_messages' $stats | tee $autogain_dir/total)"
+    fi
 else
-    strong=$(jq '.total.strong_accepted_messages' $stats | tee $autogain_dir/strong)
-    total=$(jq '.total.total_accepted_messages' $stats | tee $autogain_dir/total)
+    # use the values that were passed in via the commandline. Format is "total;strong;strong_pct" but we only use total and strong here
+    total="$(awk -F';' '{print $1}' <<< "$1" | tee $autogain_dir/strong)"
+    strong="$(awk -F';' '{print $2}' <<< "$1"| tee $autogain_dir/total)"
 fi
 
-if [[ -z $strong ]] || [[ -z $total ]]; then
-    echo "$stats: not yet ready. Skipping this $(basename "$0") run"
+if [[ -z "$strong" ]] || [[ -z "$total" ]]; then
+    echo "Stats not yet ready. Skipping this $(basename "$0") run"
     exit 99
 fi
 
@@ -134,19 +140,19 @@ if ((total < READSB_AUTOGAIN_MIN_SAMPLES)); then
     action=DoNothing
 
 elif ! awk "BEGIN{ exit ($strong_percent > $low) }" && ! awk "BEGIN{ exit ($strong_percent < $high) }"; then
-	echo "No gain change needed. Out of $total messages, ${strong_percent}% percentage of messages >-3dB is in nominal range: ${low}% < ${strong_percent}% < ${high}%). Gain remains at $oldgain."
+	echo "No gain change needed. Out of $total messages, ${strong_percent}% percentage of messages >${STRONGSIGNAL_LIMIT} dB is in nominal range: ${low}% < ${strong_percent}% < ${high}%). Gain remains at $oldgain."
 	action=DoNothing
 
 elif ! awk "BEGIN{ exit ($strong_percent < $low) }" && [[ $gain_index == 28 ]]; then
-    echo "Could have used some more gain, but gain is already at maximum! Out of $total messages, strong (>-3dB) messages ${strong_percent}% < ${low}%. Gain remains at $oldgain."
+    echo "Could have used some more gain, but gain is already at maximum! Out of $total messages, strong (>${STRONGSIGNAL_LIMIT} dB) messages ${strong_percent}% < ${low}%. Gain remains at $oldgain."
     action=DoNothing
 
 elif ! awk "BEGIN{ exit ($strong_percent > $high) }" && [[ $gain_index == 0 ]]; then
-    echo "Could have used some lower gain, but gain already at minimum! Out of $total messages, strong (>-3dB) messages ${strong_percent}% > ${high}%. Gain remains at $oldgain."
+    echo "Could have used some lower gain, but gain already at minimum! Out of $total messages, strong (>${STRONGSIGNAL_LIMIT} dB) messages ${strong_percent}% > ${high}%. Gain remains at $oldgain."
     action=DoNothing
 
 elif [[ "${gain_array[$gain_index]}" == "" ]] || [[ "${gain_array[$gain_index]}" == "-10" ]]; then
-    echo "Could have used some more gain, but gain is already at maximum! Out of $total messages, strong (>-3dB) messages ${strong_percent}% < ${low}%. Gain remains at $oldgain."
+    echo "Could have used some more gain, but gain is already at maximum! Out of $total messages, strong (>${STRONGSIGNAL_LIMIT} dB) messages ${strong_percent}% < ${low}%. Gain remains at $oldgain."
     action=DoNothing
 
 elif ! awk "BEGIN{ exit ($strong_percent < $low) }"; then
@@ -163,9 +169,9 @@ fi
 if [[ "$action" == "DoNothing" ]]; then exit 0; fi
 
 if [[ "$action" == "Increasing" ]]; then
-    echo "Increasing gain from $oldgain to $gain. Out of $total messages, ${strong_percent}% messages >-3dB exceed lower boundary of ${low}%"
+    echo "Increasing gain from $oldgain to $gain. Out of $total messages, ${strong_percent}% messages >${STRONGSIGNAL_LIMIT} dB exceed lower boundary of ${low}%"
 elif [[ "$action" == "Decreasing" ]]; then
-    echo "Decreasing gain from $oldgain to $gain. Out of $total messages, ${strong_percent}% messages >-3dB exceed upper boundary of ${high}%"
+    echo "Decreasing gain from $oldgain to $gain. Out of $total messages, ${strong_percent}% messages >${STRONGSIGNAL_LIMIT} dB exceed upper boundary of ${high}%"
 fi
 
 # Set the gain

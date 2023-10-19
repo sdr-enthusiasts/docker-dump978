@@ -1,5 +1,5 @@
 #!/command/with-contenv bash
-# shellcheck shell=bash disable=SC1091,SC2076,SC2154,SC2015
+# shellcheck shell=bash disable=SC1091,SC2076,SC2154
 
 source /scripts/common
 
@@ -21,45 +21,12 @@ READSB_AUTOGAIN_INITIAL_TIMEPERIOD="${DUMP978_AUTOGAIN_INITIAL_TIMEPERIOD:-${REA
 READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME="${DUMP978_AUTOGAIN_ADJUSTMENT_TIMEFRAME:-${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME}}"
 READSB_SDR_GAIN="${DUMP978_SDR_GAIN:-${READSB_SDR_GAIN}}"
 READSB_AUTOGAIN_ADJUSTMENT_LIMITS="${DUMP978_AUTOGAIN_ADJUSTMENT_LIMITS:-${READSB_AUTOGAIN_ADJUSTMENT_LIMITS}}"
-READSB_AUTOGAIN_STRONGSIGNAL_LIMIT="${DUMP978_AUTOGAIN_STRONGSIGNAL_LIMIT:-${READSB_AUTOGAIN_STRONGSIGNAL_LIMIT}}"
 
 READSB_AUTOGAIN_INITIAL_INTERVAL="${READSB_AUTOGAIN_INITIAL_INTERVAL:-600}" # default 10 mins
 READSB_AUTOGAIN_SUBSEQUENT_INTERVAL="${READSB_AUTOGAIN_SUBSEQUENT_INTERVAL:-86400}" # default 1 day
 READSB_AUTOGAIN_INITIAL_TIMEPERIOD="${READSB_AUTOGAIN_INITIAL_TIMEPERIOD:-21600}" # default 6 hours
 READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME="${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME:-0900-1800}" # default 0900 - 1800
 READSB_AUTOGAIN_ADJUSTMENT_LIMITS="${READSB_AUTOGAIN_ADJUSTMENT_LIMITS:-true}"  # default true (only adjust during daytime hours)
-READSB_AUTOGAIN_STRONGSIGNAL_LIMIT="${READSB_AUTOGAIN_STRONGSIGNAL_LIMIT:--3.5}" # Strong signals -3.5 dB or higher
-
-function collect_gain_values() {
-    # reads RAW messages for $1 seconds and returns the percentage strong messages with 1 decimal precision
-    # $2 is optionally the cut-off RSSI value for strong signals
-    local total_msg=0
-    local strong_msg=0
-    local rssi
-    local cutoff
-
-    if [[ -n "$2" ]]; then
-        cutoff="$2"
-        cutoff="$(bc -l <<< "scale=0; ${cutoff/#-} * 10 / 1")"
-    else
-        cutoff=30
-    fi
-
-    if [[ -z "$1" ]]; then
-        s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "error - collect_gain_values function needs collection time as argument"
-        return 99
-    fi
-
-    # collect the values and put them in an array
-    while read -r rssi; do
-        (( total_msg++ ))
-        (( rssi < cutoff )) && (( strong_msg++ )) || true
-        # echo "rssi - $rssi total - $total_msg strong $strong_msg"
-    done < <(timeout "$1" nc localhost 30978 | sed -n 's|^.*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' 2>/dev/null || true)
-    echo -n "$total_msg;$strong_msg;"
-    bc -l <<< "scale=1; 100 * $strong_msg / $total_msg / 1"
-}
-
 
 if [[ "${READSB_SDR_GAIN,,}" != "autogain" ]]; then
     # Autogain is not enabled, so let's do nothing forever
@@ -68,6 +35,14 @@ if [[ "${READSB_SDR_GAIN,,}" != "autogain" ]]; then
 fi
 
 mkdir -p /var/globe_history/autogain
+
+if [[ ! -f /run/stats/stats.json ]]; then
+    s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Waiting for the initial stats to be generated"
+    while [[ ! -f /run/stats/stats.json ]]; do
+        sleep 15
+    done
+    s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Stats are now available; proceding with autogain"
+fi
 
 # Do special things if it's the first time AUTOGAIN is running
 if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
@@ -92,13 +67,12 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
             if (( resumetime_in_secs < now_in_secs )); then resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow" +%s)"; fi 
             s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Too late: current time outside of ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME} adjustment time window. We will delay until $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow"), in $((resumetime_in_secs - now_in_secs))s"
             sleep "$((resumetime_in_secs - now_in_secs))s" & wait $!
+        else
+            sleep "$READSB_AUTOGAIN_INITIAL_INTERVAL" & wait $!  # sleep first to give readsb the opportunity to collect some initial data
         fi
-
-        # now collect data for $READSB_AUTOGAIN_INITIAL_INTERVAL seconds:
-        msg_stats="$(collect_gain_values "$READSB_AUTOGAIN_INITIAL_INTERVAL" "$READSB_AUTOGAIN_STRONGSIGNAL_LIMIT")"
-
+ 
         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization run $i of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL ))..."
-        if ! s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978 "$msg_stats"; then ((i--)) || true; fi
+        if ! s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978; then ((i--)) || true; fi
     done
     touch /var/globe_history/autogain/autogain_initialized
 fi
@@ -106,6 +80,6 @@ fi
 s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain long-term maintenance started. We'll collect data and assess every $(( READSB_AUTOGAIN_SUBSEQUENT_INTERVAL / 60 )) minutes if gain needs to be adjusted."
 while true
 do
-    msg_stats="$(collect_gain_values "$READSB_AUTOGAIN_SUBSEQUENT_INTERVAL" "$READSB_AUTOGAIN_STRONGSIGNAL_LIMIT")"
-    s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978 "$msg_stats"
+    sleep "$READSB_AUTOGAIN_SUBSEQUENT_INTERVAL" & wait $!
+    s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978
 done
