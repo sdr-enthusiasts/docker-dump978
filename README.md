@@ -341,6 +341,8 @@ These variables control the autogain system (explained further below). These sho
 | `DUMP978_AUTOGAIN_ADJUSTMENT_TIMEFRAME` | Timeframe limits for autogain during the initializaion phase, in `HHMM-HHMM` (start hours/minutes to end hours/minutes). If an adjustment "run" falls outside these limits, the autogain adjustment is delayed until the start of the next timeframe. Times are based on the container's Timezone (`TZ`) setting. | `0900-1800` (9 AM - 6 PM, local container time) |
 | `DUMP978_AUTOGAIN_LOW_PCT` | If the percentage of "strong signals" (>3dB) over a measuring period is less than this parameter, the gain will be increased by 1 position | `2.5` (2.5%) |
 | `DUMP978_AUTOGAIN_HIGH_PCT` | If the percentage of "strong signals" (>3dB) over a measuring period is more than this parameter, the gain will be decreased by 1 position | `6.0` (6.0%) |
+| `READSB_AUTOGAIN_MIN_SAMPLES` | Minimum number of received samples for autogain to be able to consider adjusting the gain | `1000` |
+| `READSB_AUTOGAIN_USE_RAW` |  If set to `true`/`on`/`yes`/`1`, the autogain function will use the "raw" message count rather than the "accepted" message count. | `true` |
 
 ## Autogain system
 

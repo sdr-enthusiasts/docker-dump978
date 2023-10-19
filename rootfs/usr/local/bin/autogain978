@@ -7,6 +7,8 @@ source /scripts/common
 
 READSB_AUTOGAIN_LOW_PCT="${DUMP978_AUTOGAIN_LOW_PCT:-${READSB_AUTOGAIN_LOW_PCT}}"
 READSB_AUTOGAIN_HIGH_PCT="${DUMP978_AUTOGAIN_HIGH_PCT:-${READSB_AUTOGAIN_HIGH_PCT}}"
+READSB_AUTOGAIN_USE_RAW="${READSB_AUTOGAIN_USE_RAW:-true}"  # if true, use raw messages instead of accepted messages 
+READSB_AUTOGAIN_MIN_SAMPLES="${READSB_AUTOGAIN_MIN_SAMPLES:-1000}"   
 
 low="${READSB_AUTOGAIN_LOW_PCT:-2.5}"
 high="${READSB_AUTOGAIN_HIGH_PCT:-6.0}"
@@ -45,24 +47,33 @@ if [[ -z $oldstrong ]] || [[ -z $oldtotal ]]; then
 	oldtotal=0
 fi
 
-if [[ "$(jq .total.strong_accepted_messages $stats 2>/dev/null)" == "null" ]]; then
+if chk_enabled "$READSB_AUTOGAIN_USE_RAW" && [[ "$(jq .total.strong_raw_messages $stats 2>/dev/null)" == "null" ]]; then
     echo "the decoder doesn't seem to be using an rtl-sdr device, can't help with that."
     exit 1
+elif [[ "$(jq .total.strong_accepted_messages $stats 2>/dev/null)" == "null" ]]; then
+    echo "the decoder doesn't seem to be using an rtl-sdr device, can't help with that."
+    exit 1
+
 fi
 
 # start=$(jq '.total.start' < $stats)
 # end=$(jq '.total.end' < $stats)
 
-strong=$(jq '.total.strong_accepted_messages' $stats | tee $autogain_dir/strong)
-total=$(jq '.total.total_accepted_messages' $stats | tee $autogain_dir/total)
+if chk_enabled "$READSB_AUTOGAIN_USE_RAW"; then 
+    strong=$(jq '.total.strong_raw_messages' $stats | tee $autogain_dir/strong)
+    total=$(jq '.total.total_raw_messages' $stats | tee $autogain_dir/total)
+else
+    strong=$(jq '.total.strong_accepted_messages' $stats | tee $autogain_dir/strong)
+    total=$(jq '.total.total_accepted_messages' $stats | tee $autogain_dir/total)
+fi
 
 if [[ -z $strong ]] || [[ -z $total ]]; then
     echo "$stats: not yet ready. Skipping this $(basename "$0") run"
     exit 99
 fi
 
-if ! awk "BEGIN{ exit  ($total < 1000) }"; then
-    echo "Total messages $total < 1000 - the decoder hasn't been running long enough. Skipping this $(basename "$0") run"
+if ! awk "BEGIN{ exit  ($total < $READSB_AUTOGAIN_MIN_SAMPLES) }"; then
+    echo "Total messages $total < $READSB_AUTOGAIN_MIN_SAMPLES - the decoder hasn't been running long enough. Skipping this $(basename "$0") run"
     exit 99
 fi
 
@@ -80,14 +91,12 @@ total=$((total - oldtotal))
 #debug echo "this run: strong - $strong; total - $total"
 
 if [[ $total == 0 ]]; then
-    percent=0
+    strong_percent=0
 else
-    percent=$(awk "BEGIN {printf \"%.3f\", $strong * 100 / $total}")
+    strong_percent=$(awk "BEGIN {printf \"%.3f\", $strong * 100 / $total}")
 fi
 
-strong=$percent
-
-if [[ $strong == "nan" ]]; then echo "Error, can't automatically adjust gain!"; exit 1; fi
+if [[ $strong_percent == "nan" ]]; then echo "Error, can't automatically adjust gain!"; exit 1; fi
 
 
 # Get the gain -- updated for docker-tar1090 use by kx1t
@@ -120,38 +129,44 @@ fi
 
 #debug echo "before adjustment: gain_index - $gain_index; gain - ${gain_array[$gain_index]}"
 
-if ((total < 1000)); then
-    echo "Only $total messages since last run - skipping this one, hopefully next run the total will be >1000. Gain remains at $oldgain."
+if ((total < READSB_AUTOGAIN_MIN_SAMPLES)); then
+    echo "Only $total messages since last run - skipping this one, hopefully next run the total will be >$READSB_AUTOGAIN_MIN_SAMPLES. Gain remains at $oldgain."
     action=DoNothing
 
-elif ! awk "BEGIN{ exit ($strong > $low) }" && ! awk "BEGIN{ exit ($strong < $high) }"; then
-	echo "No gain change needed, ${strong}% percentage of messages >-3dB is in nominal range: ${low}% < ${strong}% < ${high}%). Gain remains at $oldgain."
+elif ! awk "BEGIN{ exit ($strong_percent > $low) }" && ! awk "BEGIN{ exit ($strong_percent < $high) }"; then
+	echo "No gain change needed. Out of $total messages, ${strong_percent}% percentage of messages >-3dB is in nominal range: ${low}% < ${strong_percent}% < ${high}%). Gain remains at $oldgain."
 	action=DoNothing
 
-elif ! awk "BEGIN{ exit ($strong < $low) }" && [[ $gain_index == 28 ]]; then
-    echo "Could have used some more gain, but gain is already at maximum! Strong (>-3dB) messages ${strong}% < ${low}%. Gain remains at $oldgain."
+elif ! awk "BEGIN{ exit ($strong_percent < $low) }" && [[ $gain_index == 28 ]]; then
+    echo "Could have used some more gain, but gain is already at maximum! Out of $total messages, strong (>-3dB) messages ${strong_percent}% < ${low}%. Gain remains at $oldgain."
     action=DoNothing
 
-elif ! awk "BEGIN{ exit ($strong > $high) }" && [[ $gain_index == 0 ]]; then
-    echo "Could have used some lower gain, but gain already at minimum! Strong (>-3dB) messages ${strong}% > ${high}%. Gain remains at $oldgain."
+elif ! awk "BEGIN{ exit ($strong_percent > $high) }" && [[ $gain_index == 0 ]]; then
+    echo "Could have used some lower gain, but gain already at minimum! Out of $total messages, strong (>-3dB) messages ${strong_percent}% > ${high}%. Gain remains at $oldgain."
     action=DoNothing
 
 elif [[ "${gain_array[$gain_index]}" == "" ]] || [[ "${gain_array[$gain_index]}" == "-10" ]]; then
-    echo "Could have used some more gain, but gain is already at maximum! Strong (>-3dB) messages ${strong}% < ${low}%. Gain remains at $oldgain."
+    echo "Could have used some more gain, but gain is already at maximum! Out of $total messages, strong (>-3dB) messages ${strong_percent}% < ${low}%. Gain remains at $oldgain."
     action=DoNothing
 
-elif ! awk "BEGIN{ exit ($strong < $low) }"; then
+elif ! awk "BEGIN{ exit ($strong_percent < $low) }"; then
     gain_index=$((gain_index+1))
     gain="${gain_array[$gain_index]}"
     action=Increasing
 
-elif ! awk "BEGIN{ exit ($strong > $high) }"; then
+elif ! awk "BEGIN{ exit ($strong_percent > $high) }"; then
     gain_index=$((gain_index-1))
     gain="${gain_array[$gain_index]}"
     action=Decreasing
 fi
 
 if [[ "$action" == "DoNothing" ]]; then exit 0; fi
+
+if [[ "$action" == "Increasing" ]]; then
+    echo "Increasing gain from $oldgain to $gain. Out of $total messages, ${strong_percent}% messages >-3dB exceed lower boundary of ${low}%"
+elif [[ "$action" == "Decreasing" ]]; then
+    echo "Decreasing gain from $oldgain to $gain. Out of $total messages, ${strong_percent}% messages >-3dB exceed upper boundary of ${high}%"
+fi
 
 # Set the gain
 echo "$gain" > $autogain_dir/gain
@@ -164,9 +179,3 @@ pkill -f "python3 -u /scripts/stats.py"
 #reset numbers
 echo 0 > $autogain_dir/strong
 echo 0 > $autogain_dir/total
-
-if [[ "$action" == "Increasing" ]]; then
-    echo "Increasing gain from $oldgain to $gain (${strong}% messages >-3dB exceed lower boundary of ${low}%)"
-elif [[ "$action" == "Decreasing" ]]; then
-    echo "Decreasing gain from $oldgain to $gain (${strong}% messages >-3dB exceed upper boundary of ${high}%)"
-fi
