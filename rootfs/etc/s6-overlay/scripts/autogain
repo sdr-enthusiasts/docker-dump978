@@ -46,7 +46,7 @@ function collect_gain_values() {
     while IFS= read -r rssi <&3; do
         (( total_msg++ )) || true
         (( rssi < cutoff )) && (( strong_msg++ )) || true
-        echo "rssi - $rssi total - $total_msg strong $strong_msg"; 
+# debug        echo "rssi - $rssi total - $total_msg strong $strong_msg"; 
         (( $(date +%s) > starttime + $1 )) && break || true
     done
     # close file descriptor
