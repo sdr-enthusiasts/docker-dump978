@@ -51,11 +51,14 @@ function collect_gain_values() {
     fi
 
     # collect the values and put them in an array
+    chk_enabled "$(set -o|grep pipefail|awk '{print $2}')" && pipefailvalue="-o pipefail" || pipefailvalue="+o pipefail"
+    set -o pipefail
     while read -r rssi; do
         (( total_msg++ ))
         (( rssi < cutoff )) && (( strong_msg++ )) || true
         # echo "rssi - $rssi total - $total_msg strong $strong_msg"
-    done < <(timeout "$1" nc localhost 30978 | sed -n 's|^.*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' 2>/dev/null || true)
+    done < <(timeout "$1" stdbuf -oL nc localhost 30978 | sed -n 's|^.*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' 2>/dev/null || true)
+    set $pipefailvalue
     echo -n "$total_msg;$strong_msg;"
     bc -l <<< "scale=1; 100 * $strong_msg / $total_msg / 1"
 }
