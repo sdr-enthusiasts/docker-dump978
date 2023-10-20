@@ -50,7 +50,7 @@ function collect_gain_values() {
     set -o pipefail
 
     while read -r rssi; do
-        (( total_msg++ ))
+        (( total_msg++ )) || true
         (( rssi < cutoff )) && (( strong_msg++ )) || true
         # echo "rssi - $rssi total - $total_msg strong $strong_msg"
     done < <(timeout "$1" stdbuf -oL nc localhost 30978 | sed -n 's|^.*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' 2>/dev/null || errorcode="$?")
