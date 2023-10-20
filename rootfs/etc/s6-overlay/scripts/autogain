@@ -29,32 +29,28 @@ function collect_gain_values() {
     local total_msg=0
     local strong_msg=0
     local rssi
-    local cutoff
     local errorcode=0
     local endtime
-
-    if [[ -n "$2" ]]; then
-        cutoff="$2"
-        cutoff="$(bc -l <<< "scale=0; ${cutoff/#-} * 10 / 1")"
-    else
-        cutoff=30
-    fi
+    local cutoff="${2:--3.5}"
+    cutoff="$(bc -l <<< "scale=0; ${2/#-} * 10 / 1")"
 
     if [[ -z "$1" ]]; then
         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "error - collect_gain_values function needs collection time as argument"
         return 99
     fi
 
-    # collect the values and put them in an array
-    chk_enabled "$(set -o|grep pipefail|awk '{print $2}')" && pipefailvalue="-o pipefail" || pipefailvalue="+o pipefail"
-    set -o pipefail
-
-    while read -r rssi; do
+    # create a FD with a data stream of rssi values
+    exec 3< <(stdbuf -oL sed 's|^.*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|g' </dev/tcp/localhost/30
+    # read values for the collection time
+    starttime="$(date +%s)"
+    while IFS= read -r rssi <&3; do
         (( total_msg++ )) || true
         (( rssi < cutoff )) && (( strong_msg++ )) || true
-        # echo "rssi - $rssi total - $total_msg strong $strong_msg"
-    done < <(timeout "$1" stdbuf -oL nc localhost 30978 | sed -n 's|^.*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' 2>/dev/null || errorcode="$?")
-    set $pipefailvalue
+        echo "rssi - $rssi total - $total_msg strong $strong_msg"; 
+        (( $(date +%s) > starttime + $1 )) && break || true
+    done
+    # close file descriptor
+    exec 3>&-
 
     echo -n "$total_msg;$strong_msg;"
     if (( strong_msg * total_msg > 0 )); then
