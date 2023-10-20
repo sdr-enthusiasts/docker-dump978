@@ -37,6 +37,8 @@ function collect_gain_values() {
     local strong_msg=0
     local rssi
     local cutoff
+    local errorcode=0
+    local endtime
 
     if [[ -n "$2" ]]; then
         cutoff="$2"
@@ -53,14 +55,27 @@ function collect_gain_values() {
     # collect the values and put them in an array
     chk_enabled "$(set -o|grep pipefail|awk '{print $2}')" && pipefailvalue="-o pipefail" || pipefailvalue="+o pipefail"
     set -o pipefail
+    endtime="$(( $(date +%s) + $1 ))"
+
     while read -r rssi; do
         (( total_msg++ ))
         (( rssi < cutoff )) && (( strong_msg++ )) || true
         # echo "rssi - $rssi total - $total_msg strong $strong_msg"
-    done < <(timeout "$1" stdbuf -oL nc localhost 30978 | sed -n 's|^.*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' 2>/dev/null || true)
+    done < <(timeout "$1" stdbuf -oL nc localhost 30978 | sed -n 's|^.*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' 2>/dev/null || errorcode="$?")
     set $pipefailvalue
+    if (( errorcode == 124 )); then
+         # something went wrong, let's wait out the remaining time period
+         (( $(date +%s) < endtime )) && sleep "$((endtime - $(date +%s) ))" || true
+         total_msg=0
+         strong_msg=0
+    fi
+
     echo -n "$total_msg;$strong_msg;"
-    bc -l <<< "scale=1; 100 * $strong_msg / $total_msg / 1"
+    if (( strong_msg * total_msg > 0 )); then
+        bc -l <<< "scale=1; 100 * $strong_msg / $total_msg / 1"
+    else
+        echo "na"
+    fi
 }
 
 
@@ -99,7 +114,7 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
 
         # now collect data for $READSB_AUTOGAIN_INITIAL_INTERVAL seconds:
         msg_stats="$(collect_gain_values "$READSB_AUTOGAIN_INITIAL_INTERVAL" "$READSB_AUTOGAIN_STRONGSIGNAL_LIMIT")"
-
+        
         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization run $i of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL ))..."
         if ! s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978 "$msg_stats"; then ((i--)) || true; fi
     done
