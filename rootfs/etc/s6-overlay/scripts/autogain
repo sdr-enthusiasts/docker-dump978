@@ -4,7 +4,7 @@
 source /scripts/common
 
 trap 'pkill -P $$ || true; exit 0' SIGTERM SIGINT SIGHUP SIGQUIT
-
+set -x
 # Autogain routine
 #
 # Relevant env variables:
@@ -97,8 +97,10 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
         # now collect data for $READSB_AUTOGAIN_INITIAL_INTERVAL seconds:
         msg_stats="$(collect_gain_values "$READSB_AUTOGAIN_INITIAL_INTERVAL" "$READSB_AUTOGAIN_STRONGSIGNAL_LIMIT")"
 
-        s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization run $i of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL ))..."
-        if ! s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978 "$msg_stats"; then ((i--)) || true; fi
+        s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization run $i of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )) ($msg_stats)..."
+        if ! s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978 "$msg_stats"; then 
+            ((i--)) || true
+        fi
     done
     touch /var/globe_history/autogain/autogain_initialized
 fi
