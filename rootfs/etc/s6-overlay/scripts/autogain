@@ -4,7 +4,7 @@
 source /scripts/common
 
 trap 'pkill -P $$ || true; exit 0' SIGTERM SIGINT SIGHUP SIGQUIT
-set -x
+# set -x
 # Autogain routine
 #
 # Relevant env variables:
@@ -29,7 +29,6 @@ function collect_gain_values() {
     local total_msg=0
     local strong_msg=0
     local rssi
-    local errorcode=0
     local endtime
     local cutoff="${2:--3.5}"
     cutoff="$(bc -l <<< "scale=0; ${2/#-} * 10 / 1")"
