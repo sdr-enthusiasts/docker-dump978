@@ -105,17 +105,17 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
         msg_stats="$(collect_gain_values "$READSB_AUTOGAIN_INITIAL_INTERVAL" "$READSB_AUTOGAIN_STRONGSIGNAL_LIMIT")"
         if (( $(date +%s) < endtime )); then
              # data collection exited early. Wait out the rest of the time and invalidate partial results
-             s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "early exit after $(( READSB_AUTOGAIN_INITIAL_INTERVAL + $(date +%s) - endtime )) seconds"
-             sleep "$(( endtime - $(date +%s) ))"
+#             s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "early exit after $(( READSB_AUTOGAIN_INITIAL_INTERVAL + $(date +%s) - endtime )) seconds"
+#             sleep "$(( endtime - $(date +%s) ))"
              msg_stats="0;0;na"
         fi
         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization run $i of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )) ($msg_stats)..."
         if [[ $msg_stats == "0;0;na" ]] || ! s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978 "$msg_stats"; then 
             ((i--)) || true
-        else
-            # sleep a little bit so dump978 is again providing data 
-            sleep 5
         fi
+        
+        # sleep a little bit so dump978 is again providing data 
+        sleep 5
 
     done
     touch /var/globe_history/autogain/autogain_initialized
