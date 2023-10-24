@@ -178,9 +178,9 @@ fi
 echo "$gain" > $autogain_dir/gain
 
 # restart the services
-pkill -f /usr/local/bin/dump978-fa
+s6-svc -r /run/service/dump978
+s6-svc -r /run/service/stats
 rm -f /run/stats/stats.json || true
-pkill -f "python3 -u /scripts/stats.py"
 
 #reset numbers
 echo 0 > $autogain_dir/strong

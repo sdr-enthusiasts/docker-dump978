@@ -3,6 +3,9 @@
 
 set -eo pipefail
 
+s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args echo "Stats are temporarily disabled."
+sleep infinity
+
 sleep 5
 
 # shellcheck disable=SC2016

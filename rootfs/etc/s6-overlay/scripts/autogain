@@ -38,8 +38,16 @@ function collect_gain_values() {
         return 99
     fi
 
+    # wait until dump978-fa is running; autogain should wait for this process to exist
+    if ! pgrep dump978-fa >/dev/null 2>&1; then
+        while ! pgrep dump978-fa >/dev/null 2>&1; do
+            sleep 1
+        done
+        sleep 5     # wait a few secs after dump978-fa comes up to allow it to get established
+    fi
+
     # create a FD with a data stream of rssi values
-    exec 3< <(stdbuf -oL sed -n 's|^.*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' </dev/tcp/localhost/30978)
+    exec 3< <(stdbuf -oL sed -n 's|^.*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' </dev/tcp/localhost/30978 2>/dev/null)
     # read values for the collection time
     starttime="$(date +%s)"
     while IFS= read -r rssi <&3; do
@@ -104,6 +112,9 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization run $i of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )) ($msg_stats)..."
         if [[ $msg_stats == "0;0;na" ]] || ! s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978 "$msg_stats"; then 
             ((i--)) || true
+        else
+            # sleep a little bit so dump978 is again providing data 
+            sleep 5
         fi
 
     done
