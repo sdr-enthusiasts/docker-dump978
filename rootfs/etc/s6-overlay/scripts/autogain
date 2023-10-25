@@ -19,9 +19,10 @@ READSB_AUTOGAIN_INITIAL_INTERVAL="${DUMP978_AUTOGAIN_INITIAL_INTERVAL:-${READSB_
 READSB_AUTOGAIN_SUBSEQUENT_INTERVAL="${DUMP978_AUTOGAIN_SUBSEQUENT_INTERVAL:-${READSB_AUTOGAIN_SUBSEQUENT_INTERVAL:-86400}}"
 READSB_AUTOGAIN_INITIAL_TIMEPERIOD="${DUMP978_AUTOGAIN_INITIAL_TIMEPERIOD:-${READSB_AUTOGAIN_INITIAL_TIMEPERIOD:-21600}}"
 READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME="${DUMP978_AUTOGAIN_ADJUSTMENT_TIMEFRAME:-${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME:-0800-1800}}"
-READSB_SDR_GAIN="${DUMP978_SDR_GAIN:-${READSB_SDR_GAIN}}"
+READSB_SDR_GAIN="${DUMP978_SDR_GAIN:-${READSB_SDR_GAIN:-autogain}}"
 READSB_AUTOGAIN_ADJUSTMENT_LIMITS="${DUMP978_AUTOGAIN_ADJUSTMENT_LIMITS:-${READSB_AUTOGAIN_ADJUSTMENT_LIMITS:-true}}"
 READSB_AUTOGAIN_STRONGSIGNAL_LIMIT="${DUMP978_AUTOGAIN_STRONGSIGNAL_LIMIT:-${READSB_AUTOGAIN_STRONGSIGNAL_LIMIT:--3.5}}"
+READSB_AUTOGAIN_USE_RAW="${DUMP978_AUTOGAIN_USE_RAW:-${READSB_AUTOGAIN_USE_RAW:-true}}"
 
 function collect_gain_values() {
     # reads RAW messages for $1 seconds and returns the percentage strong messages with 1 decimal precision
@@ -47,7 +48,16 @@ function collect_gain_values() {
     fi
 
     # create a FD with a data stream of rssi values
-    exec 3< <(stdbuf -oL sed -n 's|^.*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' </dev/tcp/localhost/30978 2>/dev/null)
+    if chk_enabled "$READSB_AUTOGAIN_USE_RAW"; then
+        # parse all messages that have an ";rssi=-xx.xx" element, regardless of any error indicators 
+        exec 3< <(stdbuf -oL sed -n 's|^.*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' </dev/tcp/localhost/30978 2>/dev/null)
+    else
+        # ignore messages that have anything between the raw message string and ";rssi="
+        # These messages have an error code ";ts=x" between the raw msg and the rssi element
+        # In that case, we're only considering "accepted" messages
+        exec 3< <(stdbuf -oL sed -n 's|^-[0-9a-f]*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' </dev/tcp/localhost/30978 2>/dev/null)
+    fi
+    
     # read values for the collection time
     starttime="$(date +%s)"
     while IFS= read -r rssi <&3; do
