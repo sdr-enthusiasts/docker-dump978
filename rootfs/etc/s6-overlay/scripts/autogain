@@ -63,7 +63,7 @@ function collect_gain_values() {
     starttime="$(date +%s)"
     while IFS= read -r rssi <&3; do
         (( total_msg++ )) || true
-        (( rssi < cutoff )) && (( strong_msg++ )) || true
+        (( ${rssi##0} < cutoff )) && (( strong_msg++ )) || true
         # read messages until we have least READSB_AUTOGAIN_MIN_SAMPLES, and the max time is exhausted
         # in other words - even if the max time expires, continue collecting messages until at least the minimum has been reached
         if (( $(date +%s) > starttime + $1 )) && (( total_msg > READSB_AUTOGAIN_MIN_SAMPLES )); then
