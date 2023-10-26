@@ -8,7 +8,8 @@ source /scripts/common
 READSB_AUTOGAIN_LOW_PCT="${DUMP978_AUTOGAIN_LOW_PCT:-${READSB_AUTOGAIN_LOW_PCT}}"
 READSB_AUTOGAIN_HIGH_PCT="${DUMP978_AUTOGAIN_HIGH_PCT:-${READSB_AUTOGAIN_HIGH_PCT}}"
 READSB_AUTOGAIN_USE_RAW="${DUMP978_AUTOGAIN_USE_RAW:-${READSB_AUTOGAIN_USE_RAW:-true}}"  # if true, use raw messages instead of accepted messages 
-READSB_AUTOGAIN_MIN_SAMPLES="${DUMP978_AUTOGAIN_MIN_SAMPLES:-${READSB_AUTOGAIN_MIN_SAMPLES:-1000}}"   
+READSB_AUTOGAIN_MIN_SAMPLES="${DUMP978_AUTOGAIN_MIN_SAMPLES:-${READSB_AUTOGAIN_MIN_SAMPLES:-1000}}"
+READSB_AUTOGAIN_INITIAL_GAIN="${DUMP978_AUTOGAIN_INITIAL_GAIN:-${READSB_AUTOGAIN_INITIAL_GAIN:-49.6}}"
 
 STRONGSIGNAL_LIMIT="${2:--3.0}"
 
@@ -20,18 +21,18 @@ mkdir -p $autogain_dir
 touch $autogain_dir/strong $autogain_dir/total
 
 
-#work around stupid locale stuff
+# work around stupid locale stuff
 export LC_ALL=C
 
 stats=/run/stats/stats.json
 
 if [[ "$1" == "reset" ]]; then
-    echo "Reset AutoGain - restarting with initial values and initialization process"
-    rm -f $autogain_dir/* >/dev/null 2>&1
-    pkill -f "s6-supervise autogain"
-    pkill -f "/usr/local/bin/dump978-fa"
-    rm -f /run/stats/* || true
-    pkill -f "python3 -u /scripts/stats.py"
+    echo "Reset AutoGain - restarting initialization process with an initial gain of $READSB_AUTOGAIN_INITIAL_GAIN"
+    rm -f $autogain_dir/* >/dev/null 2>&1 || true
+    rm -f /run/stats/*  >/dev/null 2>&1 || true
+    s6-svc -r /run/service/dump978
+    s6-svc -r /run/service/autogain
+
     touch /run/stats/stats.json
     touch /run/stats/polar_range.influx
     exit 0
@@ -107,7 +108,7 @@ if [[ $strong_percent == "nan" ]]; then echo "Error, can't automatically adjust 
 
 # Get the gain -- updated for docker-tar1090 use by kx1t
 if [[ ! -f $autogain_dir/gain ]]; then
-    oldgain="${READSB_AUTOGAIN_INITIAL_GAIN:-49.6}"
+    oldgain="${READSB_AUTOGAIN_INITIAL_GAIN}"
     echo "$oldgain" > $autogain_dir/gain
     echo "Initial run. Starting point for adjusting gain is $oldgain"
 else

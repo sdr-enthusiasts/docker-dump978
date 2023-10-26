@@ -23,7 +23,7 @@ READSB_SDR_GAIN="${DUMP978_SDR_GAIN:-${READSB_SDR_GAIN:-autogain}}"
 READSB_AUTOGAIN_ADJUSTMENT_LIMITS="${DUMP978_AUTOGAIN_ADJUSTMENT_LIMITS:-${READSB_AUTOGAIN_ADJUSTMENT_LIMITS:-true}}"
 READSB_AUTOGAIN_STRONGSIGNAL_LIMIT="${DUMP978_AUTOGAIN_STRONGSIGNAL_LIMIT:-${READSB_AUTOGAIN_STRONGSIGNAL_LIMIT:--3.5}}"
 READSB_AUTOGAIN_USE_RAW="${DUMP978_AUTOGAIN_USE_RAW:-${READSB_AUTOGAIN_USE_RAW:-true}}"
-READSB_AUTOGAIN_MIN_SAMPLES="${DUMP978_AUTOGAIN_MIN_SAMPLES:-${READSB_AUTOGAIN_MIN_SAMPLES:-1000}}" 
+READSB_AUTOGAIN_MIN_SAMPLES="${DUMP978_AUTOGAIN_MIN_SAMPLES:-${READSB_AUTOGAIN_MIN_SAMPLES:-1000}}"
 
 function collect_gain_values() {
     # reads RAW messages for $1 seconds and returns the percentage strong messages with 1 decimal precision
@@ -48,15 +48,24 @@ function collect_gain_values() {
         sleep 5     # wait a few secs after dump978-fa comes up to allow it to get established
     fi
 
+    # make sure that any previous FD 3's are closed before we start. If they are still open when we
+    # (re)create the FD, the starting pointer for reading will be where we last left off reading, i.e. old data
+    exec 3>&-
     # create a FD with a data stream of rssi values
     if chk_enabled "$READSB_AUTOGAIN_USE_RAW"; then
         # parse all messages that have an ";rssi=-xx.xx" element, regardless of any error indicators 
-        exec 3< <(stdbuf -oL sed -n 's|^.*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' </dev/tcp/localhost/30978 2>/dev/null)
+        while ! exec 3< <(stdbuf -oL sed -n 's|^.*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' </dev/tcp/localhost/30978 2>/dev/null) 2>/dev/null; do
+            sleep 5
+            exec 3>&-
+        done
     else
         # ignore messages that have anything between the raw message string and ";rssi="
         # These messages have an error code ";ts=x" between the raw msg and the rssi element
         # In that case, we're only considering "accepted" messages
-        exec 3< <(stdbuf -oL sed -n 's|^-[0-9a-f]*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' </dev/tcp/localhost/30978 2>/dev/null)
+        while ! exec 3< <(stdbuf -oL sed -n 's|^-[0-9a-f]*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' </dev/tcp/localhost/30978 2>/dev/null) 2>/dev/null; do
+            sleep 5
+            exec 3>&-
+        done
     fi
 
     # read values for the collection time
@@ -129,7 +138,7 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
         fi
         
         # sleep a little bit so dump978 is again providing data 
-        sleep 5
+        sleep 15
 
     done
     touch /var/globe_history/autogain/autogain_initialized
