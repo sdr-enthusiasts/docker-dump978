@@ -14,10 +14,10 @@ if echo "$NETSTAT_AN" | grep -P "$REGEX_DUMP978_LISTENING_PORT_30978" > /dev/nul
         DUMP978_LISTENING_PORT_30978="true"
 fi
 if [[ -z "$DUMP978_LISTENING_PORT_30978" ]]; then
-    echo "[$(date)][UNHEALTHY] dump978-fa not listening on port 30978."
+    echo "[$(date)][UNHEALTHY] dump978-fa not listening on port 30978"
     EXITCODE=1
 else
-    echo "[$(date)][HEALTHY] dump978-fa listening on port 30978."
+    echo "[$(date)][HEALTHY] dump978-fa listening on port 30978"
 fi
 
 # Make sure dump978-fa is listening on port 30979
@@ -27,10 +27,10 @@ if echo "$NETSTAT_AN" | grep -P "$REGEX_DUMP978_LISTENING_PORT_30979" > /dev/nul
         DUMP978_LISTENING_PORT_30979="true"
 fi
 if [[ -z "$DUMP978_LISTENING_PORT_30979" ]]; then
-    echo "[$(date)][UNHEALTHY] dump978-fa not listening on port 30979."
+    echo "[$(date)][UNHEALTHY] dump978-fa not listening on port 30979"
     EXITCODE=1
 else
-    echo "[$(date)][HEALTHY] dump978-fa listening on port 30979."
+    echo "[$(date)][HEALTHY] dump978-fa listening on port 30979"
 fi
 
 # Make sure socat/uat2esnt is listening on port 37981
@@ -40,10 +40,10 @@ if echo "$NETSTAT_AN" | grep -P "$REGEX_SOCAT_LISTENING_PORT_37981" > /dev/null 
         SOCAT_LISTENING_PORT_37981="true"
 fi
 if [[ -z "$SOCAT_LISTENING_PORT_37981" ]]; then
-    echo "[$(date)][UNHEALTHY] socat/uat2esnt not listening on port 37981."
+    echo "[$(date)][UNHEALTHY] socat/uat2esnt not listening on port 37981"
     EXITCODE=1
 else
-    echo "[$(date)][HEALTHY] socat/uat2esnt listening on port 37981."
+    echo "[$(date)][HEALTHY] socat/uat2esnt listening on port 37981"
 fi
 
 # Make sure we're receiving messages from the SDR
