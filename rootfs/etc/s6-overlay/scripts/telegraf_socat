@@ -6,6 +6,11 @@
 
 set -eo pipefail
 
+# Check if the telegraf binary exists:
+if [[ ! -f /usr/bin/telegraf ]]; then
+  sleep infinity
+fi 
+
 if [ -z "$INFLUXDB_SKIP_AIRCRAFT" ] && { [ -n "$INFLUXDBURL" ] || [ -n "$ENABLE_PROMETHEUS" ]; } then
 
   SOCAT_BIN="$(which socat)"

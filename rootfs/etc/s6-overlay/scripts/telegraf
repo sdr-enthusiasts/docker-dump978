@@ -3,13 +3,19 @@
 
 set -eo pipefail
 
+# Check if the telegraf binary exists:
+if [[ ! -f /usr/bin/telegraf ]]; then
+  s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args echo "Telegraf not available in this container, use \"image: ghcr.io/sdr-enthusiasts/docker-dump978:telegraf\" instead"
+  sleep infinity
+fi  
+
 if [[ -n "$INFLUXDBURL" ]] || [ -n "$ENABLE_PROMETHEUS" ]; then
 
   #shellcheck disable=SC2016
   exec s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args telegraf \
     --config /etc/telegraf/telegraf.conf \
     --config-directory /etc/telegraf/telegraf.d \
-
+    | grep -v "Error in plugin"
 else
   sleep infinity
 fi
