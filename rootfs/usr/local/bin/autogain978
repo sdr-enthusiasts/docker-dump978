@@ -23,23 +23,22 @@ touch $autogain_dir/strong $autogain_dir/total
 # work around stupid locale stuff
 export LC_ALL=C
 
-stats=/run/stats/stats.json
-
 if [[ "$1" == "reset" ]]; then
     echo "Reset AutoGain - restarting initialization process with an initial gain of $READSB_AUTOGAIN_INITIAL_GAIN"
     rm -f $autogain_dir/* >/dev/null 2>&1 || true
-    rm -f /run/stats/*  >/dev/null 2>&1 || true
     s6-svc -r /run/service/dump978
     s6-svc -r /run/service/autogain
-
-    touch /run/stats/stats.json
-    touch /run/stats/polar_range.influx
     exit 0
+elif [[ -z "$1" ]]; then
+    echo "Usage: $0 total;strong[;strong_pct]"
+    echo "or: $0 reset"
+    exit 1
 fi
- 
-if [[ ! -f $stats ]] && [[ -z "$1" ]]; then
-    echo "stats.json not found, is the decoder running?"
-    exit 99
+
+# Do this for backward compatibility:
+if [[ -f /run/autogain/autogain_current_value ]] && [[ ! -f $autogain_dir/gain ]]; then
+    # we have an old configuration while the new one doesn't exist
+    cp -f /run/autogain/autogain_current_value $autogain_dir/gain
 fi
 
 oldstrong=$(cat $autogain_dir/strong 2>/dev/null)
@@ -49,29 +48,9 @@ if [[ -z $oldstrong ]] || [[ -z $oldtotal ]]; then
 	oldtotal=0
 fi
 
-if [[ -z "$1" ]]; then
-    # use the stats file -- don't use the commandline values since they're not there
-    if chk_enabled "$READSB_AUTOGAIN_USE_RAW" && [[ "$(jq .total.strong_raw_messages $stats 2>/dev/null)" == "null" ]]; then
-        echo "the decoder doesn't seem to be using an rtl-sdr device, can't help with that."
-        exit 1
-    elif [[ "$(jq .total.strong_accepted_messages $stats 2>/dev/null)" == "null" ]]; then
-        echo "the decoder doesn't seem to be using an rtl-sdr device, can't help with that."
-        exit 1
-
-    fi
-
-    if chk_enabled "$READSB_AUTOGAIN_USE_RAW"; then 
-        strong="$(jq '.total.strong_raw_messages' $stats | tee $autogain_dir/strong)"
-        total="$(jq '.total.total_raw_messages' $stats | tee $autogain_dir/total)"
-    else
-        strong="$(jq '.total.strong_accepted_messages' $stats | tee $autogain_dir/strong)"
-        total="$(jq '.total.total_accepted_messages' $stats | tee $autogain_dir/total)"
-    fi
-else
-    # use the values that were passed in via the commandline. Format is "total;strong;strong_pct" but we only use total and strong here
-    total="$(awk -F';' '{print $1}' <<< "$1" | tee $autogain_dir/strong)"
-    strong="$(awk -F';' '{print $2}' <<< "$1"| tee $autogain_dir/total)"
-fi
+# use the values that were passed in via the commandline. Format is "total;strong;strong_pct" but we only use total and strong here
+total="$(awk -F';' '{print $1}' <<< "$1" | tee $autogain_dir/strong)"
+strong="$(awk -F';' '{print $2}' <<< "$1"| tee $autogain_dir/total)"
 
 if [[ -z "$strong" ]] || [[ -z "$total" ]]; then
     echo "Stats not yet ready. Skipping this $(basename "$0") run"
@@ -89,12 +68,8 @@ if (( oldtotal > total )) || (( oldstrong > strong )) || (( oldtotal == total ))
 	oldtotal=0
 fi
 
-#debug echo  "strong - $strong; oldstrong - $oldstrong; total - $total; oldtotal - $oldtotal; "
-
 strong=$((strong - oldstrong))
 total=$((total - oldtotal))
-
-#debug echo "this run: strong - $strong; total - $total"
 
 if [[ $total == 0 ]]; then
     strong_percent=0
@@ -103,7 +78,6 @@ else
 fi
 
 if [[ $strong_percent == "nan" ]]; then echo "Error, can't automatically adjust gain!"; exit 1; fi
-
 
 # Get the gain -- updated for docker-tar1090 use by kx1t
 if [[ ! -f $autogain_dir/gain ]]; then
@@ -114,8 +88,6 @@ else
     read -r oldgain < $autogain_dir/gain
     oldgain="${oldgain:-49.6}"    # needed for stupidity reasons
 fi
-
-#debug echo -n "oldgain - $oldgain; "
 
 gain_index=28
 for i in "${!gain_array[@]}"; do
@@ -132,8 +104,6 @@ fi
 if [[ "$oldgain" == "-10" ]]; then
     gain_index=28
 fi
-
-#debug echo "before adjustment: gain_index - $gain_index; gain - ${gain_array[$gain_index]}"
 
 if ((total < READSB_AUTOGAIN_MIN_SAMPLES)); then
     echo "Only $total messages since last run - skipping this one, hopefully next run the total will be >$READSB_AUTOGAIN_MIN_SAMPLES. Gain remains at $oldgain."
@@ -177,10 +147,14 @@ fi
 # Set the gain
 echo "$gain" > $autogain_dir/gain
 
+# Do this for backward compatibility
+if [[ -f /run/autogain/autogain_current_value ]]; then
+    cp -f $autogain_dir/gain /run/autogain/autogain_current_value
+fi
+
 # restart the services
 s6-svc -r /run/service/dump978
 s6-svc -r /run/service/stats
-rm -f /run/stats/stats.json || true
 
 #reset numbers
 echo 0 > $autogain_dir/strong
