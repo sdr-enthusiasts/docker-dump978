@@ -49,6 +49,7 @@ fi
 # Handle "--sdr-gain"
 READSB_SDR_GAIN="${DUMP978_SDR_GAIN:-${READSB_SDR_GAIN}}"
 if [[ -n "$READSB_SDR_GAIN" ]]; then
+    sleep 3 # let autogain do its inital thing
     if [[ "${READSB_SDR_GAIN,,}" == "autogain" ]] && [[ -f /var/globe_history/autogain/gain ]]; then
         read -r gain < /var/globe_history/autogain/gain
         DUMP978_CMD+=("--sdr-gain $gain") 
