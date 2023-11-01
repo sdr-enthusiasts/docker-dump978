@@ -1,13 +1,16 @@
 # Declare the telegraf image so we can copy telegraf binary out of it,
 # and avoid headache of having to add apt key / apt repo and/or build from src.
+# hadolint ignore=DL3008,SC2086,SC2039,SC2068,DL3006
 FROM telegraf AS telegraf
 RUN touch /tmp/.nothing
 # Declare the wreadsb image so we can copy readsb binary out of it,
 # and avoid headache of having to add apt key / apt repo and/or build from src.
+# hadolint ignore=DL3008,SC2086,SC2039,SC2068,DL3006
 FROM ghcr.io/sdr-enthusiasts/docker-baseimage:wreadsb as wreadsb
 RUN touch /tmp/.nothing
 
 # Build final image
+# hadolint ignore=DL3008,SC2086,SC2039,SC2068,DL3006
 FROM ghcr.io/sdr-enthusiasts/docker-baseimage:dump978-full
 
 ENV PROMETHEUSPORT=9273 \
@@ -22,6 +25,7 @@ COPY --from=telegraf /usr/bin/telegraf /usr/bin/telegraf
 # Copy wreadsb
 COPY --from=wreadsb /usr/local/bin/readsb /usr/bin/readsb
 
+# hadolint ignore=DL3008,SC2086,SC2039,SC2068
 RUN set -x && \
     TEMP_PACKAGES=() && \
     KEPT_PACKAGES=() && \
