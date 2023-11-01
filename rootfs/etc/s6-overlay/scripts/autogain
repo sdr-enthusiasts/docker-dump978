@@ -101,7 +101,7 @@ mkdir -p /var/globe_history/autogain
 # Do this for backward compatibility:
 if [[ -f /run/autogain/autogain_current_value ]] && [[ ! -f $autogain_dir/gain ]]; then
     # we have an old configuration while the new one doesn't exist
-    cp -f /run/autogain/autogain_current_value $autogain_dir/gain
+    mv -f /run/autogain/autogain_current_value $autogain_dir/gain
     # let's assume the initial measurement period is done in this case
     touch /var/globe_history/autogain/autogain_initialized
 fi
