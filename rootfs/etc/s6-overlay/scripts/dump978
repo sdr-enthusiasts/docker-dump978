@@ -7,26 +7,26 @@ s6wrap=(s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args)
 DUMP978_BIN="/usr/local/bin/dump978-fa"
 
 # Listen on 0.0.0.0:DUMP978_RAW_PORT for raw messages
-DUMP978_CMD=("--raw-port" "0.0.0.0:30978")
+DUMP978_CMD=("--raw-port 0.0.0.0:30978")
 
 # Listen on 0.0.0.0:DUMP978_JSON_PORT for json messages
-DUMP978_CMD+=("--json-port" "0.0.0.0:30979")
+DUMP978_CMD+=("--json-port 0.0.0.0:30979")
 
-DUMP978_CMD+=("--format" "CS8")
+DUMP978_CMD+=("--format CS8")
 
 # Handle "--sdr"
 if [[ -n "${DUMP978_DEVICE_TYPE:-rtlsdr}" ]]; then
     case "${DUMP978_DEVICE_TYPE:-rtlsdr}" in
         rtlsdr)
             if [[ -n "${DUMP978_RTLSDR_DEVICE}" ]]; then
-                DUMP978_CMD+=("--sdr" "driver=rtlsdr,serial=${DUMP978_RTLSDR_DEVICE}")
+                DUMP978_CMD+=("--sdr driver=rtlsdr,serial=${DUMP978_RTLSDR_DEVICE}")
             else
-                DUMP978_CMD+=("--sdr" "driver=rtlsdr")
+                DUMP978_CMD+=("--sdr driver=rtlsdr")
             fi
         ;;
         stratuxv3)
             if [[ -n "${DUMP978_STRATUXV3_DEVICE}" ]]; then
-                DUMP978_CMD+=("--stratuxv3" "${DUMP978_STRATUXV3_DEVICE}")
+                DUMP978_CMD+=("--stratuxv3 ${DUMP978_STRATUXV3_DEVICE}")
             else
                 "${s6wrap[@]}" echo "ERROR: Please set DUMP978_STRATUXV3_DEVICE!"
                 sleep 60
@@ -47,13 +47,20 @@ if [[ -n "$DUMP978_SDR_AGC" ]]; then
 fi
 
 # Handle "--sdr-gain"
-if [[ -e "$GAIN_VALUE_FILE" ]]; then
-    DUMP978_CMD+=("--sdr-gain" "$(cat "$GAIN_VALUE_FILE")")
+READSB_SDR_GAIN="${DUMP978_SDR_GAIN:-${READSB_SDR_GAIN}}"
+if [[ -n "$READSB_SDR_GAIN" ]]; then
+    if [[ "${READSB_SDR_GAIN,,}" == "autogain" ]] && [[ -f /var/globe_history/autogain/gain ]]; then
+        read -r gain < /var/globe_history/autogain/gain
+        DUMP978_CMD+=("--sdr-gain $gain") 
+    elif [[ -n "$READSB_SDR_GAIN" ]]; then
+        [[ "${READSB_SDR_GAIN,,}" == "autogain" ]] && gain="${DUMP978_AUTOGAIN_INITIAL_GAIN:-${READSB_AUTOGAIN_INITIAL_GAIN:-49.6}}" || gain="${READSB_SDR_GAIN}"
+        DUMP978_CMD+=("--sdr-gain $gain")
+    fi
 fi
 
 # Handle "--sdr-ppm"
 if [[ -n "$DUMP978_SDR_PPM" ]]; then
-    DUMP978_CMD+=("--sdr-ppm" "$DUMP978_SDR_PPM")
+    DUMP978_CMD+=("--sdr-ppm $DUMP978_SDR_PPM")
 fi
 
 # Handle "--json-stdout"
@@ -61,9 +68,15 @@ if [[ -n "$DUMP978_JSON_STDOUT" ]]; then
     DUMP978_CMD+=("--json-stdout")
 fi
 
-set -eo pipefail
+# do some stuff "just in case"
+mkdir -p /run/stats
+touch /run/stats/stats.json
+touch /run/stats/polar_range.influx
 
-# shellcheck disable=SC2016
-exec "${s6wrap[@]}" "${DUMP978_BIN}" "${DUMP978_CMD[@]}"
+# start dump978-fa
+set -eo pipefail
+"${s6wrap[@]}" echo "invoking: ${DUMP978_BIN} ${DUMP978_CMD[*]}"
+# shellcheck disable=SC2068
+exec "${s6wrap[@]}" ${DUMP978_BIN} ${DUMP978_CMD[@]} 
 
 sleep 5

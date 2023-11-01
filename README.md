@@ -11,16 +11,13 @@
     - [`dump978-fa` General Options](#dump978-fa-general-options)
     - [`dump978-fa` RTL-SDR Options](#dump978-fa-rtl-sdr-options)
     - [General SDR Options](#general-sdr-options)
-    - [Auto-Gain Options](#auto-gain-options)
     - [InfluxDB Options](#influxdb-options)
     - [Prometheus Options](#prometheus-options)
+    - [Autogain Options](#autogain-options)
+  - [Autogain system](#autogain-system)
+    - [Forcing autogain to re-run from scratch](#forcing-autogain-to-re-run-from-scratch)
+    - [Container log messages while gain adjustments are made](#container-log-messages-while-gain-adjustments-are-made)
   - [`dump978` Web Pages](#dump978-web-pages)
-  - [Auto-Gain system](#auto-gain-system)
-    - [Initialisation Stage](#initialisation-stage)
-    - [Fine-Tuning Stage](#fine-tuning-stage)
-    - [Finished Stage](#finished-stage)
-    - [State/Log/Stats Files](#statelogstats-files)
-    - [Forcing auto-gain to re-run from scratch](#forcing-auto-gain-to-re-run-from-scratch)
   - [Logging](#logging)
   - [Getting help](#getting-help)
 
@@ -51,9 +48,9 @@ The container listens on the following TCP ports:
 
 ## Paths & Volumes
 
-| Path (inside container) | Details                                                               |
-| ----------------------- | --------------------------------------------------------------------- |
-| `/run/autogain`         | Map this to persistent storage if you set `DUMP978_SDR_GAIN=autogain` |
+| Path (inside container) | Details |
+|-------------------------|---------|
+| `/var/globe_history` | Map this to persistant storage if you set `DUMP978_SDR_GAIN=autogain` |
 
 ## Up and Running - `docker run`
 
@@ -93,32 +90,31 @@ Here is an example `docker-compose.yml`:
   <summary>&lt;&dash;&dash; Click the arrow to see the <code>docker-compose.yml</code> text</summary>
 
 ```yaml
-dump978:
-  # dump978 gets UAT data from the SDR
-  image: ghcr.io/sdr-enthusiasts/docker-dump978
-  #    profiles:
-  #      - donotstart
-  tty: true
-  container_name: dump978
-  hostname: dump978
-  restart: always
-  labels:
-    - "autoheal=true"
-  device_cgroup_rules:
-    - "c 189:* rwm"
-  environment:
-    - TZ=${FEEDER_TZ}
-    - DUMP978_SDR_PPM=${ADSB_SDR_PPM}
-    - DUMP978_SDR_GAIN=${ADSB_SDR_GAIN}
-    - DUMP978_RTLSDR_DEVICE=${UAT_SDR_SERIAL}
-    - DUMP978_SDR_GAIN=${UAT_SDR_GAIN}
-    - DUMP978_SDR_PPM=${UAT_SDR_PPM}
-    - AUTOGAIN_INITIAL_PERIOD=7200
-  volumes:
-    - /opt/adsb/dump978/autogain:/run/autogain
-    - /dev:/dev:ro
-  tmpfs:
-    - /run/readsb
+  dump978:
+# dump978 gets UAT data from the SDR
+    image: ghcr.io/sdr-enthusiasts/docker-dump978
+#    profiles:
+#      - donotstart
+    tty: true
+    container_name: dump978
+    hostname: dump978
+    restart: always
+    labels:
+      - "autoheal=true"
+    device_cgroup_rules:
+      - 'c 189:* rwm'
+    environment:
+      - TZ=${FEEDER_TZ}
+      - DUMP978_SDR_PPM=${ADSB_SDR_PPM}
+      - DUMP978_SDR_GAIN=${ADSB_SDR_GAIN}
+      - DUMP978_RTLSDR_DEVICE=${UAT_SDR_SERIAL}
+      - DUMP978_SDR_GAIN=${UAT_SDR_GAIN}
+      - DUMP978_SDR_PPM=${UAT_SDR_PPM}
+    volumes:
+      - /opt/adsb/dump978:/var/globe_history
+      - /dev:/dev:ro
+    tmpfs:
+      - /run
 
 ultrafeeder:
   image: ghcr.io/sdr-enthusiasts/docker-adsb-ultrafeeder
@@ -282,13 +278,13 @@ You should now be feeding ADSB-ES & UAT to the "new" aggregators, FlightAware, a
 
 Where the default value is "Unset", `dump978-fa`'s default will be used.
 
-| Variable              | Description                                                                                                                 | Controls which `dump978-fa` option | Default  |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | -------- |
-| `DUMP978_DEVICE_TYPE` | Currently only `rtlsdr` is supported. If you have another type of radio, please open an issue and I'll try to get it added. | `--sdr driver=`                    | `rtlsdr` |
-| `DUMP978_SDR_AGC`     | Set to any value to enable SDR AGC.                                                                                         | `--sdr-auto-gain`                  | Unset    |
-| `DUMP978_SDR_GAIN`    | Set gain (in dB). Use autogain to have the container determine an appropriate gain, more on this below.                     | `--sdr-gain`                       | Unset    |
-| `DUMP978_SDR_PPM`     | Set SDR frequency correction in PPM.                                                                                        | `--sdr-ppm`                        | Unset    |
-| `DUMP978_JSON_STDOUT` | Write decoded json to the container log. Useful for troubleshooting, but don't leave enabled!                               | `--json-stdout`                    | Unset    |
+| Variable | Description | Controls which `dump978-fa` option | Default |
+|----------|-------------|--------------------------------|---------|
+| `DUMP978_DEVICE_TYPE` | Currently only `rtlsdr` is supported. If you have another type of radio, please open an issue and I'll try to get it added. | `--sdr driver=` | `rtlsdr` |
+| `DUMP978_SDR_AGC` | Set to any value to enable SDR AGC. | `--sdr-auto-gain` | Unset |
+| `DUMP978_SDR_GAIN` | Set gain (in dB). Use autogain to have the container determine an appropriate gain, more on this below. | `--sdr-gain` | Unset |
+| `DUMP978_SDR_PPM` | Set SDR frequency correction in PPM. | `--sdr-ppm` | Unset |
+| `DUMP978_JSON_STDOUT` | Write decoded json to the container log. Useful for troubleshooting, but don't leave enabled! | `--json-stdout` | Unset |
 
 ### `dump978-fa` RTL-SDR Options
 
@@ -305,23 +301,6 @@ Where the default value is "Unset", `dump978-fa`'s default will be used.
 | Variable                 | Description                                          | Default |
 | ------------------------ | ---------------------------------------------------- | ------- |
 | `DUMP978_ENABLE_BIASTEE` | Set to any value to enable bias-tee on your RTL-SDR. | Unset   |
-
-### Auto-Gain Options
-
-These variables control the auto-gain system (explained further below). These should rarely need changing from the defaults.
-
-| Variable                               | Description                                                                                                                         | Default                            |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| `AUTOGAIN_INITIAL_PERIOD`              | How long each gain level should be measured during auto-gain initialisation (ie: "roughing in"), in seconds.                        | `7200` (2 hours)                   |
-| `AUTOGAIN_INITIAL_MSGS_ACCEPTED`       | How many locally accepted messages should be received per gain level during auto-gain initialisaion to ensure accurate measurement. | `100000`                           |
-| `AUTOGAIN_FINETUNE_PERIOD`             | How long each gain level should be measured during auto-gain fine-tuning, in seconds.                                               | `604800` (7 days)                  |
-| `AUTOGAIN_FINETUNE_MSGS_ACCEPTED`      | How many locally accepted messages should be received per gain level during auto-gain fine-tuning to ensure accurate measurement.   | `700000`                           |
-| `AUTOGAIN_FINISHED_PERIOD`             | How long between the completion of fine-tuning (and ultimately setting a preferred gain), and re-running the entire process.        | `31536000` (1 year)                |
-| `AUTOGAIN_MAX_GAIN_VALUE`              | The maximum gain setting in dB that will be used by auto-gain.                                                                      | `49.6` (max supported by `readsb`) |
-| `AUTOGAIN_MIN_GAIN_VALUE`              | The minimum gain setting in dB that will be used by auto-gain.                                                                      | `0.0` (min supported by `readsb`)  |
-| `AUTOGAIN_PERCENT_STRONG_MESSAGES_MAX` | The maximum percentage of "strong messages" auto-gain will aim for.                                                                 | `10.0`                             |
-| `AUTOGAIN_PERCENT_STRONG_MESSAGES_MIN` | The minimum percentage of "strong messages" auto-gain will aim for.                                                                 | `0.5`                              |
-| `AUTOGAIN_SERVICE_PERIOD`              | How often the auto-gain system will check results and perform actions, in seconds                                                   | `900` (15 minutes)                 |
 
 ### InfluxDB Options
 
@@ -348,6 +327,42 @@ These variables control exposing flight data to [Prometheus](https://prometheus.
 | `PROMETHEUSPORT`    | The port that the prometheus client will listen on          | `9273`     |
 | `PROMETHEUSPATH`    | The path that the prometheus client will publish metrics on | `/metrics` |
 
+### Autogain Options
+
+These variables control the autogain system (explained further below). These should rarely need changing from the defaults.
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DUMP978_AUTOGAIN_INITIAL_TIMEPERIOD` | How long the autogain initialization phase should take (ie: "roughing in"), in seconds. | `21600` (6 hours) |
+| `DUMP978_AUTOGAIN_INITIAL_INTERVAL` | How often autogain should measure and adjust the gain during the initialization phase, in seconds. | `600` (10 minutes) |
+| `DUMP978_AUTOGAIN_SUBSEQUENT_INTERVAL` | How often autogain should measure and adjust the gain after the initialization phase is done, in seconds. | `84600` (24 hours) |
+| `DUMP978_AUTOGAIN_ADJUSTMENT_LIMITS` | If set to `true`/`on`/`yes`/`1`, while in the initialization phase, autogain will only adjust the gain during the timeframe set by the `DUMP978_AUTOGAIN_ADJUSTMENT_TIMEFRAME` parameter. | `true` |
+| `DUMP978_AUTOGAIN_ADJUSTMENT_TIMEFRAME` | Timeframe limits for autogain during the initializaion phase, in `HHMM-HHMM` (start hours/minutes to end hours/minutes). If an adjustment "run" falls outside these limits, the autogain adjustment is delayed until the start of the next timeframe. Times are based on the container's Timezone (`TZ`) setting. | `0900-1800` (9 AM - 6 PM, local container time) |
+| `DUMP978_AUTOGAIN_LOW_PCT` | If the percentage of "strong signals" (>3dB) over a measuring period is less than this parameter, the gain will be increased by 1 position | `2.5` (2.5%) |
+| `DUMP978_AUTOGAIN_HIGH_PCT` | If the percentage of "strong signals" (>3dB) over a measuring period is more than this parameter, the gain will be decreased by 1 position | `6.0` (6.0%) |
+| `READSB_AUTOGAIN_MIN_SAMPLES` | Minimum number of received samples for autogain to be able to consider adjusting the gain | `1000` |
+| `READSB_AUTOGAIN_USE_RAW` |  If set to `true`/`on`/`yes`/`1`, the autogain function will use the "raw" message count rather than the "accepted" message count. | `true` |
+
+## Autogain system
+
+An automatic gain adjustment system is included in this container, and can be activated by setting the environment variable `DUMP978_SDR_GAIN` to `autogain`. You should also map `/var/globe_history/` to persistent storage, otherwise the autogain system will start over each time the container is restarted.
+
+Autogain will take several hours to initially work out a reasonable gain. This is the so-called "initialization period", which is by default 6 hours. It will then perform a daily measurement to see if your gain needs further adjusting.
+
+The autogain system will work as follows; values are based on the default parameter settings from above:
+
+1. `dump978` is set to maximum gain.
+2. Initial results are collected every 10 minutes, for up to 6 hours (initialization phase). If `DUMP978_AUTOGAIN_ADJUSTMENT_LIMITS` is set to true, measurements are suspended if the time is outside the set time limits (0900 - 1800 local container time). Every 10 minutes, the gain is adjusted by 1 position if the average percentage of "strong" signals (>-3dB) is less than 2.5% or more than 6.0%.
+3. After the initialization phase is over, the average percentage of "strong signal" is calculated on a daily basis, and an adjustment is made accordingly.
+
+### Forcing autogain to re-run from scratch
+
+Run `docker exec dump978 autogain978 reset` to remove reset all autogain data and start the initialization phase fron scratch
+
+### Container log messages while gain adjustments are made
+
+When a gain adjustment is made, `dump978-fa` and related processes are forcibly restarted. This will cause a number of messages to the container logs showing that these processes are terminated, and subsequently restarted. These messages are normal during an autogain gain adjustment, and are not errors in the container.
+
 ## `dump978` Web Pages
 
 The container's webserver makes SkyAware978 (and the related `data` directories with `json` statistics files) available at `/skyaware978`. This means, using the port mapping example shown above, that you can access these URLs (among other things):
@@ -355,65 +370,6 @@ The container's webserver makes SkyAware978 (and the related `data` directories 
 - [http://my_ip:30980/skyaware978](http://my_ip:30980/skyaware978) -- SkyAware978 map
 - [http://my_ip:30980/skyaware978/data/aircraft.json](http://my_ip:30980/skyaware978/data/aircraft.json) -- aircraft.json statistics file
 - [http://my_ip:30980/health](http://my_ip:30980/health) -- HealthCheck results (returns `OK` if container is healthy)
-
-## Auto-Gain system
-
-An automatic gain adjustment system is included in this container, and can be activated by setting the environment variable `DUMP978_SDR_GAIN` to `autogain`. You should also map `/run/autogain` to persistent storage, otherwise the auto-gain system will start over each time the container is restarted. You should also ensure `LAT` and `LON` are set because the script uses the maximum range as a metric for choosing the best gain level.
-
-_Why is this written in bash?_ Because I wanted to keep the container size down and not have to install an interpreter like python. I don't know C/Go/Perl or any other languages.
-
-Auto-gain will take several weeks to initially (over the period of a week or so) work out feasible maximum and minimum gain levels for your environment. It will then perform a fine-tune process to find the optimal gain level.
-
-During each process, gain levels are ranked as follows:
-
-- The range achievable by each gain level
-- The signal-to-noise ratio of the receiver
-
-The ranking process is done by sorting the gain levels for each statistic from worst to best, then awarding points. 0 points are awarded for the worst gain level, 1 point for the next gain level all the way up to several points for the best gain level (total number of points is the number of gain levels tested). The number of points for each gain level is totalled, and the optimal gain level is the level with the largest number of points. Any gain level with a percentage of "strong signals" outside of `AUTOGAIN_PERCENT_STRONG_MESSAGES_MAX` and `AUTOGAIN_PERCENT_STRONG_MESSAGES_MIN` is discarded.
-
-Using this method, auto-gain tried to achieve the best balance of range, tracks and signal-to-noise ratio, whilst ensuring an appropriate number of "strong signals".
-
-The auto-gain system will work as follows:
-
-### Initialisation Stage
-
-In the initialisation process:
-
-1. `dump978` is set to maximum gain (`AUTOGAIN_MAX_GAIN_VALUE`).
-1. Results are collected up to `AUTOGAIN_INITIAL_PERIOD` (up to 2 hours by default).
-1. Check to ensure at least `AUTOGAIN_INITIAL_MSGS_ACCEPTED` messages have been locally accepted (1,000,000 by default). If not, continue collecting data for up to 24 hours. This combination of time and number of messages ensures we have enough data to make a valid initial assessment of each gain level.
-1. Gain level is lowered by one level.
-1. Gain levels are reviewed from lowest to highest gain level. If there have been gain levels resulting in a percentage of strong messages between `AUTOGAIN_PERCENT_STRONG_MESSAGES_MAX` and `AUTOGAIN_PERCENT_STRONG_MESSAGES_MIN`, and there have been three consecutive gain levels above `AUTOGAIN_PERCENT_STRONG_MESSAGES_MAX`, auto-gain lowers the maximum gain level.
-1. Gain levels are reviewed from highest to lowest gain level. If there have been gain levels resulting in a percentage of strong messages between `AUTOGAIN_PERCENT_STRONG_MESSAGES_MAX` and `AUTOGAIN_PERCENT_STRONG_MESSAGES_MIN`, and there have been three consecutive gain levels below `AUTOGAIN_PERCENT_STRONG_MESSAGES_MIN`, auto-gain discontinues testing gain levels.
-
-Auto-gain then moves onto the fine-tuning stage.
-
-### Fine-Tuning Stage
-
-In the fine-tuning process:
-
-1. `dump978` is set to maximum gain level chosen at the end of the initialisation process.
-1. Results are collected up to `AUTOGAIN_FINETUNE_PERIOD` (7 days by default).
-1. Check to ensure at least `AUTOGAIN_FINETUNE_MSGS_ACCEPTED` messages have been locally accepted (7,000,000 by default). If not, continue collecting data for up to 48 hours. This combination of time and number of messages ensures we have enough data to make an accurate assessment of each gain level, and by using 7 days this ensures any peaks/troughs in data due to quiet/busy days of the week do not skew results.
-1. Gain level is lowered by one level until the minimum gain level chosen at the end of the initialisation process is reached.
-
-At this point, all of the tested gain levels are ranked based on the criterea discussed above.
-
-The gain level with the most points is chosen, and `dump978` is set to this gain level.
-
-Auto-gain then moves onto the finished stage.
-
-### Finished Stage
-
-In the finished stage, auto-gain does nothing (as `dump978` is operating at optimal gain) for `AUTOGAIN_FINISHED_PERIOD` (1 year by default). After this time, auto-gain reverts to the initialisation stage and the entire process is completed again. This makes sure your configuration is always running at the optimal gain level as your RTLSDR ages.
-
-### State/Log/Stats Files
-
-All files for auto-gain are located at `/run/autogain` within the container. They should not be modified by hand.
-
-### Forcing auto-gain to re-run from scratch
-
-Run `docker exec <container_name> rm /run/autogain/*` to remove all existing auto-gain state data. Restart the container and auto-gain will detect this and re-start at initialisation stage.
 
 ## Logging
 

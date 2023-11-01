@@ -3,6 +3,8 @@
 
 set -eo pipefail
 
+s6wrap=(s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args)
+
 sleep 5
 
 # patch skyaware978 to remove the "v=2?" from the URL
@@ -11,10 +13,19 @@ sed -i 's/flightFeederCheck();//g' /usr/share/dump978-fa/html/script.js
 sed -i 's/setStatsLink();//g' /usr/share/dump978-fa/html/script.js
 sed -i 's/<button id="stats_page_button" class="stats_button">Go to My ADS-B Statistics Page<\/button>//g' /usr/share/dump978-fa/html/index.html
 
+SKY_BIN="skyaware978"
+SKY_ARGS=("--json-dir /run/skyaware978")
+SKY_ARGS+=("--connect 127.0.0.1:30978")
+SKY_ARGS+=("--reconnect-interval 30")
+SKY_ARGS+=("--history-count 180")
+SKY_ARGS+=("--history-interval 15")
+
 
 if [[ -n "${LON}" ]] && [[ -n "${LAT}" ]]; then
-    optstr="--lat ${LAT} --lon ${LON}"
+    SKY_ARGS+=("--lat ${LAT}")
+    SKY_ARGS+=("--lon ${LON}")
 fi
 
-# shellcheck disable=SC2016,SC2086
-s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args skyaware978 --json-dir /run/skyaware978 --connect 127.0.0.1:30978 --reconnect-interval 30 --history-count 180 --history-interval 15 ${optstr}
+"${s6wrap[@]}" echo "invoking: $SKY_BIN ${SKY_ARGS[*]}"
+# shellcheck disable=SC2068
+"${s6wrap[@]}" $SKY_BIN ${SKY_ARGS[@]}
