@@ -3,13 +3,12 @@
 
 # Connect VRS port to Telegraf port
 
-
 set -eo pipefail
 
-# Check if the telegraf binary exists:
+# If the telegraf binary is not present, then do nothing:
 if [[ ! -f /usr/bin/telegraf ]]; then
   sleep infinity
-fi 
+fi
 
 if [ -z "$INFLUXDB_SKIP_AIRCRAFT" ] && { [ -n "$INFLUXDBURL" ] || [ -n "$ENABLE_PROMETHEUS" ]; } then
 

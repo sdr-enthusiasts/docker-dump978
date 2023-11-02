@@ -34,6 +34,8 @@ This container also contains InfluxData's [Telegraf](https://docs.influxdata.com
 
 UAT is currently only used in the USA, so don't bother with this if you're not located in the USA.
 
+NOTE: As of November 2, 2023, Telegraf support is only available in the container labeled `ghcr.io/sdr-enthusiasts/docker-dump978:telegraf`. It is no longer available in `ghcr.io/sdr-enthusiasts/docker-dump978:latest`. If you want to use Telegraf to send data to InfluxDB or Prometheus, please switch to the `:telegraf` label.
+
 ## Ports
 
 The container listens on the following TCP ports:
@@ -92,7 +94,7 @@ Here is an example `docker-compose.yml`:
 ```yaml
   dump978:
 # dump978 gets UAT data from the SDR
-    image: ghcr.io/sdr-enthusiasts/docker-dump978
+    image: ghcr.io/sdr-enthusiasts/docker-dump978:latest
 #    profiles:
 #      - donotstart
     tty: true
@@ -304,6 +306,8 @@ Where the default value is "Unset", `dump978-fa`'s default will be used.
 
 ### InfluxDB Options
 
+NOTE: As of November 2, 2023, Telegraf support is only available in the container labeled `ghcr.io/sdr-enthusiasts/docker-dump978:telegraf`. It is no longer available in `ghcr.io/sdr-enthusiasts/docker-dump978:latest`. If you want to use Telegraf to send data to InfluxDB or Prometheus, please switch to the `:telegraf` label.
+
 These variables control the sending of flight data and dump978 metrics to [InfluxDB](https://docs.influxdata.com/influxdb/) (via a built-in instance of [Telegraf](https://docs.influxdata.com/telegraf/)).
 
 | Variable                 | Description                                                                                                                             | Default |
@@ -318,6 +322,8 @@ These variables control the sending of flight data and dump978 metrics to [Influ
 | `INFLUXDB_SKIP_AIRCRAFT` | Set to any value to skip publishing aircraft data to InfluxDB to minimize bandwidth and database size.                                  | Unset   |
 
 ### Prometheus Options
+
+NOTE: As of November 2, 2023, Telegraf support is only available in the container labeled `ghcr.io/sdr-enthusiasts/docker-dump978:telegraf`. It is no longer available in `ghcr.io/sdr-enthusiasts/docker-dump978:latest`. If you want to use Telegraf to send data to InfluxDB or Prometheus, please switch to the `:telegraf` label.
 
 These variables control exposing flight data to [Prometheus](https://prometheus.io) (via a built-in instance of [Telegraf](https://docs.influxdata.com/telegraf/)).
 
