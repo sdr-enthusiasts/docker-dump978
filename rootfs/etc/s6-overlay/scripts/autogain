@@ -154,7 +154,7 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
 #             sleep "$(( endtime - $(date +%s) ))"
              msg_stats="0;0;na"
         fi
-        s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[INFO] Data collection for autogain initialization run $i of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )) ($msg_stats)..."
+        s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[INFO] Data collection is complete for initialization run $i of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )) ($msg_stats)."
         if [[ $msg_stats == "0;0;na" ]] || ! s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978 "$msg_stats"; then 
             ((i--)) || true
         fi
