@@ -118,7 +118,7 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
     # See if this is a continuation of a previous initialization run. If so, continue from where we left of
     if [[ -f /var/globe_history/autogain/init_runs_count ]]; then
         read -r start_run_number < /var/globe_history/autogain/init_runs_count
-         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[INFO] Continuing previous initialization series at run # $((start_run_number + 1))"
+         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[INFO] Continuing previous initialization series at run # $((start_run_number + 1)) of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL ))"
     else
         start_run_number=0
     fi
