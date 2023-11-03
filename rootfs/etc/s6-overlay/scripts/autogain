@@ -37,7 +37,7 @@ function collect_gain_values() {
     unset GAIN_COLLECTION
 
     if [[ -z "$1" ]]; then
-        s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "error - collect_gain_values function needs collection time as argument"
+        s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[ERROR] collect_gain_values function needs collection time as argument"
         return 99
     fi
 
@@ -77,9 +77,9 @@ function collect_gain_values() {
         (( ${rssi##0} < cutoff )) && (( strong_msg++ )) || true
         # read messages until we have least READSB_AUTOGAIN_MIN_SAMPLES, and the max time is exhausted
         # in other words - even if the max time expires, continue collecting messages until at least the minimum has been reached
-        if (( $(date +%s) > starttime + $1 )) && (( total_msg >= READSB_AUTOGAIN_MIN_SAMPLES )); then
+        if (( total_msg >= READSB_AUTOGAIN_MIN_SAMPLES )) && (( $(date +%s) > starttime + $1 )); then
             break
-        elif (( $(date +%s) > starttime + $1 )) && (( total_msg < READSB_AUTOGAIN_MIN_SAMPLES )) && [[ "$have_notified" != true ]]; then
+        elif (( total_msg < READSB_AUTOGAIN_MIN_SAMPLES )) && [[ "$have_notified" != true ]] && (( $(date +%s) > starttime + $1 )) ; then
             s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[WARNING] Collected samples for $READSB_AUTOGAIN_INITIAL_INTERVAL sec but we've only collected $total_msg samples out of a minimum of $READSB_AUTOGAIN_MIN_SAMPLES. Continuing collection until minimum is reached."
             have_notified=true
         fi
@@ -118,7 +118,7 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
     # See if this is a continuation of a previous initialization run. If so, continue from where we left of
     if [[ -f /var/globe_history/autogain/init_runs_count ]]; then
         read -r start_run_number < /var/globe_history/autogain/init_runs_count
-         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Continuing previous initialization series at run # $((start_run_number + 1))"
+         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[INFO] Continuing previous initialization series at run # $((start_run_number + 1))"
     else
         start_run_number=0
     fi
@@ -132,7 +132,7 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
             # current time is before start of window; delay until window starts
             now_in_secs="$(date +%s)"
             resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} today" +%s)"
-            s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Too early: current time before ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME} adjustment time window. We will delay until $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*}"), in $((resumetime_in_secs - now_in_secs))s"
+            s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[INFO] Too early: current time before ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME} adjustment time window. We will delay until $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*}"), in $((resumetime_in_secs - now_in_secs))s"
             sleep $((resumetime_in_secs - now_in_secs)) & wait $!
          elif chk_enabled "$READSB_AUTOGAIN_ADJUSTMENT_LIMITS" && \
          (( $(date +%s) > $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME##*-} today" +%s) )); then
@@ -140,7 +140,7 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
             now_in_secs="$(date +%s)"
             resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} today" +%s)"
             if (( resumetime_in_secs < now_in_secs )); then resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow" +%s)"; fi 
-            s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Too late: current time outside of ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME} adjustment time window. We will delay until $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow"), in $((resumetime_in_secs - now_in_secs))s"
+            s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[INFO] Too late: current time outside of ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME} adjustment time window. We will delay until $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow"), in $((resumetime_in_secs - now_in_secs))s"
             sleep "$((resumetime_in_secs - now_in_secs))s" & wait $!
         fi
 
@@ -154,7 +154,7 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
 #             sleep "$(( endtime - $(date +%s) ))"
              msg_stats="0;0;na"
         fi
-        s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization run $i of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )) ($msg_stats)..."
+        s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[INFO] Data collection for autogain initialization run $i of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )) ($msg_stats)..."
         if [[ $msg_stats == "0;0;na" ]] || ! s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978 "$msg_stats"; then 
             ((i--)) || true
         fi
@@ -169,16 +169,17 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
     rm -f /var/globe_history/autogain/init_runs_count
 fi
 
-s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain long-term maintenance started. We'll collect data and assess every $(( READSB_AUTOGAIN_SUBSEQUENT_INTERVAL / 60 )) minutes if gain needs to be adjusted."
+s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[INFO] Autogain long-term maintenance started. We'll collect data and assess every $(( READSB_AUTOGAIN_SUBSEQUENT_INTERVAL / 60 )) minutes if gain needs to be adjusted."
 while true
 do
     endtime="$(( $(date +%s) + READSB_AUTOGAIN_SUBSEQUENT_INTERVAL ))"
-    collect_gain_values "$READSB_AUTOGAIN_INITIAL_INTERVAL" "$READSB_AUTOGAIN_STRONGSIGNAL_LIMIT"
+    collect_gain_values "$READSB_AUTOGAIN_SUBSEQUENT_INTERVAL" "$READSB_AUTOGAIN_STRONGSIGNAL_LIMIT"
     msg_stats="$GAIN_COLLECTION"
     if (( $(date +%s) >= endtime )); then
-         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978 "$msg_stats"
+        s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[INFO] Data collection for autogain long-term run of $(( READSB_AUTOGAIN_SUBSEQUENT_INTERVAL / 60 )) minutes completed."
+        s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978 "$msg_stats"
     else
-         # data collection exited early. Wait a bit and restart
-         sleep 60 & wait !
+        # data collection exited early. Wait a bit and restart
+        sleep 60 & wait !
     fi
 done
