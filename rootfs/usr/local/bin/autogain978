@@ -143,6 +143,7 @@ if [[ "$action" == "Increasing" ]]; then
 elif [[ "$action" == "Decreasing" ]]; then
     echo "Decreasing gain from $oldgain to $gain. Out of $total messages, ${strong_percent}% messages >${STRONGSIGNAL_LIMIT} dB exceed upper boundary of ${high}%"
 fi
+echo "Restarting several processes, please ignore the errors below."
 
 # Set the gain
 echo "$gain" > $autogain_dir/gain
