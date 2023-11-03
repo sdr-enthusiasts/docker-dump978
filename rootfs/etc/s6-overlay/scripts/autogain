@@ -121,6 +121,7 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
          s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Continuing previous initialization series at run # $((start_run_number + 1))"
     else
         start_run_number=0
+    fi
 
     # run autogain every $READSB_AUTOGAIN_INITIAL_INTERVAL secs for $READSB_AUTOGAIN_INITIAL_TIMEPERIOD secs
     for (( i=$((++start_run_number)); i<=$(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )); i++ ))
