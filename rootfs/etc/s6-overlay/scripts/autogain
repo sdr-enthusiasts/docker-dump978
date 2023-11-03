@@ -115,8 +115,15 @@ fi
 if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
     s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization started. We'll collect data every $READSB_AUTOGAIN_INITIAL_INTERVAL secs for $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / 60 )) minutes to do an initial gain assessment."
 
+    # See if this is a continuation of a previous initialization run. If so, continue from where we left of
+    if [[ -f /var/globe_history/autogain/init_runs_count ]]; then
+        read -r start_run_number < /var/globe_history/autogain/init_runs_count
+         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Continuing previous initialization series at run # $((start_run_number + 1))"
+    else
+        start_run_number=0
+
     # run autogain every $READSB_AUTOGAIN_INITIAL_INTERVAL secs for $READSB_AUTOGAIN_INITIAL_TIMEPERIOD secs
-    for (( i=1; i<=$(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )); i++ ))
+    for (( i=$((++start_run_number)); i<=$(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )); i++ ))
     do
         # check if adjustment time limits are enabled and if we are in the window; if we're not then sleep until we will be in the window
         if chk_enabled "$READSB_AUTOGAIN_ADJUSTMENT_LIMITS" && \
