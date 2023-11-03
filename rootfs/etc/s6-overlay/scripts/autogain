@@ -158,12 +158,15 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
         if [[ $msg_stats == "0;0;na" ]] || ! s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978 "$msg_stats"; then 
             ((i--)) || true
         fi
-        
+
+        # write back the current run number:
+        echo "$start_run_number" > /var/globe_history/autogain/init_runs_count
         # sleep a little bit so dump978 is again providing data 
         sleep 15
 
     done
     touch /var/globe_history/autogain/autogain_initialized
+    rm -f /var/globe_history/autogain/init_runs_count
 fi
 
 s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain long-term maintenance started. We'll collect data and assess every $(( READSB_AUTOGAIN_SUBSEQUENT_INTERVAL / 60 )) minutes if gain needs to be adjusted."
