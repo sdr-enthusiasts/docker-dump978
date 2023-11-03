@@ -97,7 +97,7 @@ function collect_gain_values() {
 
 if [[ "${READSB_SDR_GAIN,,}" != "autogain" ]]; then
     # Autogain is not enabled, so let's do nothing forever
-    s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Gain is set to ${READSB_SDR_GAIN}; autogain disabled."
+    s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[INFO] Gain is set to ${READSB_SDR_GAIN}; autogain disabled."
     exec sleep infinity
 fi
 
@@ -113,7 +113,7 @@ fi
 
 # Do special things if it's the first time AUTOGAIN is running
 if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
-    s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "Autogain initialization started. We'll collect data every $READSB_AUTOGAIN_INITIAL_INTERVAL secs for $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / 60 )) minutes to do an initial gain assessment."
+    s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[INFO] Autogain initialization started. We'll collect data every $READSB_AUTOGAIN_INITIAL_INTERVAL secs for $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / 60 )) minutes to do an initial gain assessment."
 
     # See if this is a continuation of a previous initialization run. If so, continue from where we left of
     if [[ -f /var/globe_history/autogain/init_runs_count ]]; then
@@ -160,7 +160,7 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
         fi
 
         # write back the current run number:
-        echo "$start_run_number" > /var/globe_history/autogain/init_runs_count
+        echo "$i" > /var/globe_history/autogain/init_runs_count
         # sleep a little bit so dump978 is again providing data 
         sleep 15
 
