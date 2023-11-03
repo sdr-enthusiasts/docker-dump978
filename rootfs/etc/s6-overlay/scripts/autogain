@@ -184,7 +184,7 @@ do
     collect_gain_values "$READSB_AUTOGAIN_SUBSEQUENT_INTERVAL" "$READSB_AUTOGAIN_STRONGSIGNAL_LIMIT"
     endtime="$(date +%s)"
     msg_stats="$GAIN_COLLECTION"
-    if (( endtime >= (starttime + (SUBSEQUENT_INTERVAL_MINIMUM_COMPLETION_PCT * READSB_AUTOGAIN_SUBSEQUENT_INTERVAL)/100 )); then
+    if (( endtime >= (starttime + (SUBSEQUENT_INTERVAL_MINIMUM_COMPLETION_PCT * READSB_AUTOGAIN_SUBSEQUENT_INTERVAL)/100 ) )); then
         if (( endtime >- (starttime + READSB_AUTOGAIN_SUBSEQUENT_INTERVAL) )); then
             s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[INFO] Data collection for autogain long-term run of $(( READSB_AUTOGAIN_SUBSEQUENT_INTERVAL / 60 )) minutes completed"
         else
