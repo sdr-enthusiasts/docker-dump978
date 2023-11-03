@@ -75,8 +75,12 @@ touch /run/stats/stats.json
 touch /run/stats/polar_range.influx
 
 # start dump978-fa
-set -eo pipefail
-"${s6wrap[@]}" echo "invoking: ${DUMP978_BIN} ${DUMP978_CMD[*]}"
+
+# waittime is added to stagger the start time of the different SDRs.
+# this should distribute the power load on the USB bus of small SBCs a bit, leading to fewer startup failures
+waittime="$((RANDOM % 10))"
+"${s6wrap[@]}" echo "In $waittime secs: invoking: ${DUMP978_BIN} ${DUMP978_CMD[*]}"
+sleep "$waittime"
 # shellcheck disable=SC2068
 exec "${s6wrap[@]}" ${DUMP978_BIN} ${DUMP978_CMD[@]} 
 
