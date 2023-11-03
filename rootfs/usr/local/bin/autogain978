@@ -74,7 +74,7 @@ total=$((total - oldtotal))
 if [[ $total == 0 ]]; then
     strong_percent=0
 else
-    strong_percent=$(awk "BEGIN {printf \"%.3f\", $strong * 100 / $total}")
+    strong_percent=$(awk "BEGIN {printf \"%.1f\", $strong * 100 / $total}")
 fi
 
 if [[ $strong_percent == "nan" ]]; then echo "Error, can't automatically adjust gain!"; exit 1; fi
