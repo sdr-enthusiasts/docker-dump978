@@ -1,26 +1,31 @@
----
 name: Deploy
 
 on:
   workflow_dispatch:
     inputs:
       reason:
-        required: true
+        required: false
         description: "Reason for running this workflow"
       use_test_image:
         required: false
         type: boolean
         description: "Use base image testpr"
         default: false
+
   push:
     branches:
       - main
+    # Trigger only on specific files being updated.
 
-    # Don't trigger if it's just a documentation update
     paths:
-      - "rust/**"
-      - "Dockerfile**"
-      - "rootfs/**"
+      - Dockerfile
+      - rootfs/**
+
+env:
+  GHCR_IMAGE: sdr-enthusiasts/docker-dump978
+  GHCR_REGISTRY: ghcr.io
+  GH_LABEL: main
+  GHCR_TAG: telegraf
 
 jobs:
   workflow-dispatch:
@@ -41,7 +46,7 @@ jobs:
           echo "Use test image: $INPUTS_USE_TEST_IMAGE"
 
   deploy:
-    name: Deploy
+    name: Deploy without telegraf
     uses: sdr-enthusiasts/common-github-workflows/.github/workflows/build_and_push_image.yml@main
     with:
       push_enabled: true
@@ -50,14 +55,41 @@ jobs:
       ghcr_repo: ${{ github.repository }}
       dockerhub_profile: mikenye
       dockerhub_repo: dump978
+      get_version_method: git_commit_hash_short
       # set build_latest to true if github.event.inputs.use_test_image is false
-      build_latest: ${{ github.event.inputs.use_test_image == 'false' || github.event.inputs.use_test_image == ''  }}
+      build_latest: ${{ github.event.inputs.use_test_image == 'false' || github.event.inputs.use_test_image == '' }}
       build_baseimage_test: ${{ github.event.inputs.use_test_image == 'true' }}
       # only build the entire stack if we are not using the test image
-      build_version_specific: ${{ github.event.inputs.use_test_image == 'false' || github.event.inputs.use_test_image == ''  }}
-      build_platform_specific: ${{ github.event.inputs.use_test_image == 'false' || github.event.inputs.use_test_image == ''  }}
-      build_nohealthcheck: ${{ github.event.inputs.use_test_image == 'false' || github.event.inputs.use_test_image == ''  }}
+      build_version_specific: ${{ github.event.inputs.use_test_image == 'false' || github.event.inputs.use_test_image == '' }}
+      build_platform_specific: ${{ github.event.inputs.use_test_image == 'false' || github.event.inputs.use_test_image == '' }}
+      build_nohealthcheck: ${{ github.event.inputs.use_test_image == 'false' || github.event.inputs.use_test_image == '' }}
       build_baseimage_url: :wreadsb/:wreadsb-test-pr/g;s/:dump978-full/:dump978-full-test-pr
+    secrets:
+      ghcr_token: ${{ secrets.GITHUB_TOKEN }}
+      dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  deploy_with_telegraf:
+    name: Deploy with telegraf and healthcheck
+    uses: sdr-enthusiasts/common-github-workflows/.github/workflows/build_and_push_image.yml@main
+    with:
+      push_enabled: true
+      push_destinations: ghcr.io;dockerhub
+      ghcr_repo_owner: ${{ github.repository_owner }}
+      ghcr_repo: ${{ github.repository }}
+      dockerhub_profile: mikenye
+      dockerhub_repo: dump978
+      get_version_method: git_commit_hash_short
+      # set build_latest to true if github.event.inputs.use_test_image is false
+      build_latest: ${{ github.event.inputs.use_test_image == 'false' || github.event.inputs.use_test_image == '' }}
+      build_baseimage_test: ${{ github.event.inputs.use_test_image == 'true' }}
+      build_baseimage_url: :wreadsb/:wreadsb-test-pr/g;s/:dump978-full/:dump978-full-test-pr
+      # only build the entire stack if we are not using the test image
+      build_version_specific: false
+      build_platform_specific: false
+      build_nohealthcheck: ${{ github.event.inputs.use_test_image == 'false' || github.event.inputs.use_test_image == '' }}
+      docker_latest_tag: telegraf
+      dockerfile_changes: |
+        ##telegraf##/
     secrets:
       ghcr_token: ${{ secrets.GITHUB_TOKEN }}
       dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}

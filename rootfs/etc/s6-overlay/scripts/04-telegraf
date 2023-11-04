@@ -1,6 +1,11 @@
 #!/command/with-contenv bash
 #shellcheck shell=bash
 
+# If the telegraf binary is not present, then do nothing:
+if [[ ! -f /usr/bin/telegraf ]]; then
+  exit 0
+fi
+
 # Initialise config files, and remove existing
 OUTPUT_INFLUXDB_CONFIG_FILE="/etc/telegraf/telegraf.d/outputs_influxdb.conf"
 rm -f "$OUTPUT_INFLUXDB_CONFIG_FILE" > /dev/null 2>&1 || true

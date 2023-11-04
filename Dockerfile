@@ -1,8 +1,13 @@
+# DO NOT REMOVE THE ##telegraf## PREFIXES BELOW. THESE ARE USED BY GH ACTION deploy.yml
+# TO AUTOMATICALLY BUILD IMAGES WITH AND WITHOUT TELEGRAF
+
 # Declare the telegraf image so we can copy telegraf binary out of it,
 # and avoid headache of having to add apt key / apt repo and/or build from src.
+
 # hadolint ignore=DL3008,SC2086,SC2039,SC2068,DL3006
-FROM telegraf AS telegraf
-RUN touch /tmp/.nothing
+##telegraf##FROM telegraf AS telegraf
+##telegraf##RUN touch /tmp/.nothing
+
 # Declare the wreadsb image so we can copy readsb binary out of it,
 # and avoid headache of having to add apt key / apt repo and/or build from src.
 # hadolint ignore=DL3008,SC2086,SC2039,SC2068,DL3006
@@ -20,7 +25,7 @@ ENV PROMETHEUSPORT=9273 \
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Copy telegraf
-COPY --from=telegraf /usr/bin/telegraf /usr/bin/telegraf
+##telegraf##COPY --from=telegraf /usr/bin/telegraf /usr/bin/telegraf
 
 # Copy wreadsb
 COPY --from=wreadsb /usr/local/bin/readsb /usr/bin/readsb
@@ -77,7 +82,7 @@ RUN set -x && \
     popd && \
     mkdir -p /run/stats && \
     mkdir -p /run/autogain && \
-    mkdir -p /etc/telegraf/telegraf.d && \
+    ##telegraf##mkdir -p /etc/telegraf/telegraf.d && \
     # Health check
     mkdir -p /etc/lighttpd/lua && \
     echo -e 'server.modules += ("mod_magnet")\n\n$HTTP["url"] =~ "^/health/?" {\n  magnet.attract-physical-path-to = ("/etc/lighttpd/lua/healthcheck.lua")\n}' > /etc/lighttpd/conf-enabled/90-healthcheck.conf && \
@@ -87,7 +92,7 @@ RUN set -x && \
     apt-get autoremove -y && \
     rm -rf /src/* /tmp/* /var/lib/apt/lists/* && \
     # Write versions
-    telegraf --version > /VERSIONS  && \
+    ##telegraf##telegraf --version > /VERSIONS  && \
     ( dump978-fa --version > /VERSIONS 2>&1 || true ) && \
     IMAGE_VERSION=$(grep dump978 /VERSIONS | cut -d ' ' -f2) && \
     echo "${IMAGE_VERSION::7}" > /IMAGE_VERSION && \

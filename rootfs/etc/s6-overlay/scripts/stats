@@ -3,6 +3,13 @@
 
 set -eo pipefail
 
+# Stats are only needed when telegraf is running
+# They are no longer needed for autogain
+# If the telegraf binary is not present, then do nothing:
+if [[ ! -f /usr/bin/telegraf ]]; then
+  sleep infinity
+fi
+
 sleep 5
 
 # shellcheck disable=SC2016
