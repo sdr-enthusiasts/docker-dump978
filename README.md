@@ -107,8 +107,8 @@ Here is an example `docker-compose.yml`:
       - 'c 189:* rwm'
     environment:
       - TZ=${FEEDER_TZ}
-      - DUMP978_SDR_PPM=${ADSB_SDR_PPM}
-      - DUMP978_SDR_GAIN=${ADSB_SDR_GAIN}
+      - LAT=${FEEDER_LAT}
+      - LON=${FEEDER_LONG}
       - DUMP978_RTLSDR_DEVICE=${UAT_SDR_SERIAL}
       - DUMP978_SDR_GAIN=${UAT_SDR_GAIN}
       - DUMP978_SDR_PPM=${UAT_SDR_PPM}
@@ -116,7 +116,9 @@ Here is an example `docker-compose.yml`:
       - /opt/adsb/dump978:/var/globe_history
       - /dev:/dev:ro
     tmpfs:
-      - /run
+      - /run:exec,size=64M
+      - /tmp:size=64M
+      - /var/log:size=32M
 
 ultrafeeder:
   image: ghcr.io/sdr-enthusiasts/docker-adsb-ultrafeeder
