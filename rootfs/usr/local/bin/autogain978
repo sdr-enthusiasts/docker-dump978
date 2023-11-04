@@ -24,21 +24,15 @@ touch $autogain_dir/strong $autogain_dir/total
 export LC_ALL=C
 
 if [[ "$1" == "reset" ]]; then
-    echo "Reset AutoGain - restarting initialization process with an initial gain of $READSB_AUTOGAIN_INITIAL_GAIN"
+    echo "[INFO] Reset AutoGain - restarting initialization process with an initial gain of $READSB_AUTOGAIN_INITIAL_GAIN"
     rm -f $autogain_dir/* >/dev/null 2>&1 || true
     s6-svc -r /run/service/dump978
     s6-svc -r /run/service/autogain
     exit 0
 elif [[ -z "$1" ]]; then
-    echo "Usage: $0 total;strong[;strong_pct]"
-    echo "or: $0 reset"
+    echo "[INFO] Usage: $0 total;strong[;strong_pct]"
+    echo "[INFO] or: $0 reset"
     exit 1
-fi
-
-# Do this for backward compatibility:
-if [[ -f /run/autogain/autogain_current_value ]] && [[ ! -f $autogain_dir/gain ]]; then
-    # we have an old configuration while the new one doesn't exist
-    cp -f /run/autogain/autogain_current_value $autogain_dir/gain
 fi
 
 oldstrong=$(cat $autogain_dir/strong 2>/dev/null)
@@ -53,12 +47,12 @@ total="$(awk -F';' '{print $1}' <<< "$1" | tee $autogain_dir/strong)"
 strong="$(awk -F';' '{print $2}' <<< "$1"| tee $autogain_dir/total)"
 
 if [[ -z "$strong" ]] || [[ -z "$total" ]]; then
-    echo "Stats not yet ready. Skipping this $(basename "$0") run"
+    echo "[INFO] Stats not yet ready. Skipping this $(basename "$0") run"
     exit 99
 fi
 
 if ! awk "BEGIN{ exit  ($total < $READSB_AUTOGAIN_MIN_SAMPLES) }"; then
-    echo "Total messages $total < $READSB_AUTOGAIN_MIN_SAMPLES - the decoder hasn't been running long enough. Skipping this $(basename "$0") run"
+    echo "[INFO] Total messages $total < $READSB_AUTOGAIN_MIN_SAMPLES - the decoder hasn't been running long enough. Skipping this $(basename "$0") run"
     exit 99
 fi
 
@@ -74,16 +68,16 @@ total=$((total - oldtotal))
 if [[ $total == 0 ]]; then
     strong_percent=0
 else
-    strong_percent=$(awk "BEGIN {printf \"%.3f\", $strong * 100 / $total}")
+    strong_percent=$(awk "BEGIN {printf \"%.1f\", $strong * 100 / $total}")
 fi
 
-if [[ $strong_percent == "nan" ]]; then echo "Error, can't automatically adjust gain!"; exit 1; fi
+if [[ $strong_percent == "nan" ]]; then echo "[ERROR] can't automatically adjust gain!"; exit 1; fi
 
 # Get the gain -- updated for docker-tar1090 use by kx1t
 if [[ ! -f $autogain_dir/gain ]]; then
     oldgain="${READSB_AUTOGAIN_INITIAL_GAIN}"
     echo "$oldgain" > $autogain_dir/gain
-    echo "Initial run. Starting point for adjusting gain is $oldgain"
+    echo "[INFO] Initial run. Starting point for adjusting gain is $oldgain"
 else
     read -r oldgain < $autogain_dir/gain
     oldgain="${oldgain:-49.6}"    # needed for stupidity reasons
@@ -106,23 +100,23 @@ if [[ "$oldgain" == "-10" ]]; then
 fi
 
 if ((total < READSB_AUTOGAIN_MIN_SAMPLES)); then
-    echo "Only $total messages since last run - skipping this one, hopefully next run the total will be >$READSB_AUTOGAIN_MIN_SAMPLES. Gain remains at $oldgain."
+    echo "[INFO] Only $total messages since last run - skipping this one, hopefully next run the total will be >$READSB_AUTOGAIN_MIN_SAMPLES. Gain remains at $oldgain."
     action=DoNothing
 
 elif ! awk "BEGIN{ exit ($strong_percent > $low) }" && ! awk "BEGIN{ exit ($strong_percent < $high) }"; then
-	echo "No gain change needed. Out of $total messages, ${strong_percent}% percentage of messages >${STRONGSIGNAL_LIMIT} dB is in nominal range: ${low}% < ${strong_percent}% < ${high}%). Gain remains at $oldgain."
+	echo "[INFO] No gain change needed. Out of $total messages, ${strong_percent}% percentage of messages >${STRONGSIGNAL_LIMIT} dB is in nominal range: ${low}% < ${strong_percent}% < ${high}%). Gain remains at $oldgain."
 	action=DoNothing
 
 elif ! awk "BEGIN{ exit ($strong_percent < $low) }" && [[ $gain_index == 28 ]]; then
-    echo "Could have used some more gain, but gain is already at maximum! Out of $total messages, strong (>${STRONGSIGNAL_LIMIT} dB) messages ${strong_percent}% < ${low}%. Gain remains at $oldgain."
+    echo "[INFO] Could have used some more gain, but gain is already at maximum! Out of $total messages, strong (>${STRONGSIGNAL_LIMIT} dB) messages ${strong_percent}% < ${low}%. Gain remains at $oldgain."
     action=DoNothing
 
 elif ! awk "BEGIN{ exit ($strong_percent > $high) }" && [[ $gain_index == 0 ]]; then
-    echo "Could have used some lower gain, but gain already at minimum! Out of $total messages, strong (>${STRONGSIGNAL_LIMIT} dB) messages ${strong_percent}% > ${high}%. Gain remains at $oldgain."
+    echo "[INFO] Could have used some lower gain, but gain already at minimum! Out of $total messages, strong (>${STRONGSIGNAL_LIMIT} dB) messages ${strong_percent}% > ${high}%. Gain remains at $oldgain."
     action=DoNothing
 
 elif [[ "${gain_array[$gain_index]}" == "" ]] || [[ "${gain_array[$gain_index]}" == "-10" ]]; then
-    echo "Could have used some more gain, but gain is already at maximum! Out of $total messages, strong (>${STRONGSIGNAL_LIMIT} dB) messages ${strong_percent}% < ${low}%. Gain remains at $oldgain."
+    echo "[INFO] Could have used some more gain, but gain is already at maximum! Out of $total messages, strong (>${STRONGSIGNAL_LIMIT} dB) messages ${strong_percent}% < ${low}%. Gain remains at $oldgain."
     action=DoNothing
 
 elif ! awk "BEGIN{ exit ($strong_percent < $low) }"; then
@@ -139,18 +133,14 @@ fi
 if [[ "$action" == "DoNothing" ]]; then exit 0; fi
 
 if [[ "$action" == "Increasing" ]]; then
-    echo "Increasing gain from $oldgain to $gain. Out of $total messages, ${strong_percent}% messages >${STRONGSIGNAL_LIMIT} dB exceed lower boundary of ${low}%"
+    echo "[INFO] Increasing gain from $oldgain to $gain. Out of $total messages, ${strong_percent}% messages >${STRONGSIGNAL_LIMIT} dB exceed lower boundary of ${low}%"
 elif [[ "$action" == "Decreasing" ]]; then
-    echo "Decreasing gain from $oldgain to $gain. Out of $total messages, ${strong_percent}% messages >${STRONGSIGNAL_LIMIT} dB exceed upper boundary of ${high}%"
+    echo "[INFO] Decreasing gain from $oldgain to $gain. Out of $total messages, ${strong_percent}% messages >${STRONGSIGNAL_LIMIT} dB exceed upper boundary of ${high}%"
 fi
+echo "[INFO] Restarting several processes, please ignore the errors below."
 
 # Set the gain
 echo "$gain" > $autogain_dir/gain
-
-# Do this for backward compatibility
-if [[ -f /run/autogain/autogain_current_value ]]; then
-    cp -f $autogain_dir/gain /run/autogain/autogain_current_value
-fi
 
 # restart the services
 s6-svc -r /run/service/dump978 2>/dev/null || true
