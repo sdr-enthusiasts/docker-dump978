@@ -25,7 +25,7 @@ READSB_AUTOGAIN_STRONGSIGNAL_LIMIT="${DUMP978_AUTOGAIN_STRONGSIGNAL_LIMIT:-${REA
 READSB_AUTOGAIN_USE_RAW="${DUMP978_AUTOGAIN_USE_RAW:-${READSB_AUTOGAIN_USE_RAW:-true}}"
 READSB_AUTOGAIN_MIN_SAMPLES="${DUMP978_AUTOGAIN_MIN_SAMPLES:-${READSB_AUTOGAIN_MIN_SAMPLES:-1000}}"
 
-SUBSEQUENT_INTERVAL_MINIMUM_COMPLETION_PCT=50   # must be a whole number without decimals)
+SUBSEQUENT_INTERVAL_MINIMUM_COMPLETION_PCT="${SUBSEQUENT_INTERVAL_MINIMUM_COMPLETION_PCT:-50}"   # must be a whole number without decimals)
 
 function collect_gain_values() {
     # reads RAW messages for $1 seconds and returns the percentage strong messages with 1 decimal precision
@@ -169,7 +169,7 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
         # write back the current run number:
         echo "$i" > /var/globe_history/autogain/init_runs_count
         # sleep a little bit so dump978 is again providing data 
-        sleep 15
+        sleep 15 & wait $!
 
     done
     touch /var/globe_history/autogain/autogain_initialized
@@ -196,6 +196,6 @@ do
         # data collection exited early. Wait a bit and restart
         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[ERROR] Data collection for autogain long-term run of $(( READSB_AUTOGAIN_SUBSEQUENT_INTERVAL / 60 )) minutes completed was terminated early (after $(( (endtime - starttime)/60 )) minutes)"
         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[ERROR] Since this is less than ${SUBSEQUENT_INTERVAL_MINIMUM_COMPLETION_PCT}% of the collection period, we discard it and start collecting again"
-        sleep 15 & wait !
+        sleep 15 & wait $!
     fi
 done
