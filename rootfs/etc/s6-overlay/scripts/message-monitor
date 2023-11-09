@@ -42,5 +42,5 @@ do
     fi
     echo "$new_msg_count" > /run/stats/msgs_since_last_monitor_run
 
-    sleep "${DUMP978_MSG_MONITORING_INTERVAL:-15m}" & wait !
+    sleep "${DUMP978_MSG_MONITORING_INTERVAL:-15m}" & wait $!
 done
