@@ -275,8 +275,9 @@ You should now be feeding ADSB-ES & UAT to the "new" aggregators, FlightAware, a
 | Variable | Description                                                                                                                                 | Default |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | `TZ`     | Local timezone in ["TZ database name" format](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).                                | `UTC`   |
-| `LAT`    | Latitude of your receiver. Only required if you want range statistics for InfluxDB or Prometheus, or if you are using the autogain script.  | Unset   |
-| `LON`    | Longitude of your receiver. Only required if you want range statistics for InfluxDB or Prometheus, or if you are using the autogain script. | Unset   |
+| `LAT`    | Latitude of your receiver. Only required if you want range statistics for InfluxDB, Prometheus, or tar1090/ultrafeeder graphs. | Unset   |
+| `LON`    | Longitude of your receiver. Only required if you want range statistics for InfluxDB, Prometheus, or tar1090/ultrafeeder graphs. | Unset   |
+| `DUMP978_MSG_MONITORING_INTERVAL` | Interval between runs of the Message Monitor that checks if new messages are received. Format of value is anything that is accepted by the Linux `sleep` command | Unset (15 minutes) |
 
 ### `dump978-fa` General Options
 

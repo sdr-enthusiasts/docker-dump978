@@ -1,34 +1,46 @@
 #!/command/with-contenv bash
-#shellcheck shell=bash
+#shellcheck shell=bash disable=SC1091
+
+source /scripts/common
+mkdir -p /run/stats
+s6wrap=(s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args)
 
 while :
 do
     # Make sure we're receiving messages from the SDR
     # get the number of messages received since process start:
-    mkdir -p /run/stats
+
     if [[ -f /run/skyaware978/aircraft.json ]]; then
         read -r new_msg_count <<< "$(jq .messages /run/skyaware978/aircraft.json 2>/dev/null)"
     else
         new_msg_count="STARTING"
     fi
     # get the number of messages previously read, or 0 if there's no history:
-    if [[ -f /run/stats/msgs_since_last_healthcheck ]]; then
-        read -r old_msg_count < /run/stats/msgs_since_last_healthcheck
-        secs_since_last_check="$(( $(date +%s) - $(stat -c '%Y' /run/stats/msgs_since_last_healthcheck) ))"
+    if [[ -f /run/stats/msgs_since_last_monitor_run ]]; then
+        read -r old_msg_count < /run/stats/msgs_since_last_monitor_run
+        secs_since_last_check="$(( $(date +%s) - $(stat -c '%Y' /run/stats/msgs_since_last_monitor_run) ))"
     else
         old_msg_count=0
-        secs_since_last_check="$(( $(date +%s) - $(stat -c '%Y' /run/service/skyaware978) ))"    # use skyaware978 modify time as the creation time of the container
+        secs_since_last_check="$(( $(date +%s) - $(stat -c '%Y' /run/service/skyaware) ))"    # use skyaware978 modify time as the creation time of the container
+    fi
+
+    # if new_msg_count < old_msg_count, dump978 must have restarted since the previous run of this script
+    # in that case, assume that old_msg_count=0
+    if (( new_msg_count < old_msg_count )); then
+        old_msg_count=0
     fi
 
     if [[ "$new_msg_count" == "STARTING" ]]; then
-        echo "[$(date)][STARTING] No messages have been received as the container is still starting"
+        "${s6wrap[@]}" echo "[STARTING] No messages have been received as the container is still starting"
         new_msg_count=0
     elif (( new_msg_count == old_msg_count )); then
-        echo "[$(date)][UNHEALTHY] No messages received since last HealthCheck ($secs_since_last_check secs ago)"
+        "${s6wrap[@]}" echo "[WARNING] No messages received since last run of the Messages Monitor ($secs_since_last_check secs ago)"
+    elif (( new_msg_count > old_msg_count )); then
+        "${s6wrap[@]}" echo "[OK] $(( new_msg_count - old_msg_count )) messages received since last run of the Messages Monitor ($secs_since_last_check secs ago)"
     else
-        echo "[$(date)][ERROR] This situation cannot occur; new_msg_count=$new_msg_count; old_msg_count=$old_msg_count"
+        "${s6wrap[@]}" echo "[ERROR] This situation cannot occur, please notify the software maintainers. new_msg_count=$new_msg_count; old_msg_count=$old_msg_count"
     fi
-    echo "$new_msg_count" > /run/stats/msgs_since_last_healthcheck
+    echo "$new_msg_count" > /run/stats/msgs_since_last_monitor_run
 
-    sleep 15m
+    sleep "${DUMP978_MSG_MONITORING_INTERVAL:-15m}" & wait !
 done
