@@ -46,38 +46,6 @@ else
     echo "[$(date)][HEALTHY] socat/uat2esnt listening on port 37981"
 fi
 
-# Make sure we're receiving messages from the SDR
-# get the number of messages received since process start:
-mkdir -p /run/stats
-if [[ -f /run/skyaware978/aircraft.json ]]; then
-    read -r new_msg_count <<< "$(jq .messages /run/skyaware978/aircraft.json 2>/dev/null)"
-else
-    new_msg_count="STARTING"
-fi
-# get the number of messages previously read, or 0 if there's no history:
-if [[ -f /run/stats/msgs_since_last_healthcheck ]]; then
-    read -r old_msg_count < /run/stats/msgs_since_last_healthcheck
-    secs_since_last_check="$(( $(date +%s) - $(stat -c '%Y' /run/stats/msgs_since_last_healthcheck) ))"
-else
-    old_msg_count=0
-    secs_since_last_check="$(( $(date +%s) - $(stat -c '%Y' /run/service/skyaware978) ))"    # use skyaware978 modify time as the creation time of the container
-fi
-# Take conclusitions
-if [[ "$new_msg_count" == "STARTING" ]]; then
-    echo "[$(date)][STARTING] No messages have been received as the container is still starting"
-    new_msg_count=0
-elif (( new_msg_count < old_msg_count )) || (( old_msg_count == 0 && new_msg_count > 0 )); then
-    echo "[$(date)][HEALTHY] $new_msg_count messages received since start of the SkyAware978 service ($secs_since_last_check secs ago)"
-elif (( new_msg_count > old_msg_count )); then
-    echo "[$(date)][HEALTHY] $(( new_msg_count - old_msg_count )) messages received since last HealthCheck ($secs_since_last_check secs ago)"
-elif (( new_msg_count == old_msg_count )); then
-    echo "[$(date)][UNHEALTHY] No messages received since last HealthCheck ($secs_since_last_check secs ago)"
-    EXITCODE=1
-else
-    echo "[$(date)][ERROR] This situation cannot occur; new_msg_count=$new_msg_count; old_msg_count=$old_msg_count"
-fi
-echo "$new_msg_count" > /run/stats/msgs_since_last_healthcheck
-
 ##### Service Death Counts #####
 # shellcheck disable=SC2046,SC2207
 services=($(basename -a $(find /run/service/ -maxdepth 1 -type l)))
