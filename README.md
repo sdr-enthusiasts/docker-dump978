@@ -277,7 +277,8 @@ You should now be feeding ADSB-ES & UAT to the "new" aggregators, FlightAware, a
 | `TZ`     | Local timezone in ["TZ database name" format](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).                                | `UTC`   |
 | `LAT`    | Latitude of your receiver. Only required if you want range statistics for InfluxDB, Prometheus, or tar1090/ultrafeeder graphs. | Unset   |
 | `LON`    | Longitude of your receiver. Only required if you want range statistics for InfluxDB, Prometheus, or tar1090/ultrafeeder graphs. | Unset   |
-| `DUMP978_MSG_MONITORING_INTERVAL` | Interval between runs of the Message Monitor that checks if new messages are received. Format of value is anything that is accepted by the Linux `sleep` command | Unset (15 minutes) |
+| `DUMP978_MSG_MONITOR_INTERVAL` | Interval between runs of the Message Monitor that checks if new messages are received. Format of value is anything that is accepted by the Linux `sleep` command | Unset (30 minutes) |
+| `DUMP978_MSG_MONITOR_RESTART_WHEN_STALE` | If set to `true`/`on`/`yes`/`1`, the receiver process is restarted when no messages are received during the monitoring interval | Unset (`false`) |
 
 ### `dump978-fa` General Options
 
@@ -351,6 +352,7 @@ These variables control the autogain system (explained further below). These sho
 | `DUMP978_AUTOGAIN_HIGH_PCT` | If the percentage of "strong signals" (>3dB) over a measuring period is more than this parameter, the gain will be decreased by 1 position | `6.0` (6.0%) |
 | `READSB_AUTOGAIN_MIN_SAMPLES` | Minimum number of received samples for autogain to be able to consider adjusting the gain | `1000` |
 | `READSB_AUTOGAIN_USE_RAW` |  If set to `true`/`on`/`yes`/`1`, the autogain function will use the "raw" message count rather than the "accepted" message count. | `true` |
+| `SUBSEQUENT_INTERVAL_MINIMUM_COMPLETION_PCT` | Minimum percentage of `DUMP978_AUTOGAIN_SUBSEQUENT_INTERVAL` time that needs to be completed before autogain will use the collected data during the subsequent/long-term process | `50` |
 
 ## Autogain system
 
