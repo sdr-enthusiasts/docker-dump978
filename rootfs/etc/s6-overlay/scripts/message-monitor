@@ -21,7 +21,7 @@ do
         secs_since_last_check="$(( $(date +%s) - $(stat -c '%Y' /run/stats/msgs_since_last_monitor_run) ))"
     else
         old_msg_count=0
-        secs_since_last_check="$(( $(date +%s) - $(stat -c '%Y' /run/service/skyaware) ))"    # use skyaware978 modify time as the creation time of the container
+        secs_since_last_check="$(( $(date +%s) - $(stat -c '%Y' /run/service/skyaware978) ))"    # use skyaware978 modify time as the creation time of the container
     fi
 
     # if new_msg_count < old_msg_count, dump978 must have restarted since the previous run of this script
