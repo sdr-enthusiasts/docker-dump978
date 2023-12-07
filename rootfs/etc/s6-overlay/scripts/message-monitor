@@ -4,6 +4,7 @@
 source /scripts/common
 mkdir -p /run/stats
 s6wrap=(s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args)
+READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME="${DUMP978_AUTOGAIN_ADJUSTMENT_TIMEFRAME:-${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME:-0800-1800}}"
 
 while :
 do
@@ -34,10 +35,14 @@ do
         "${s6wrap[@]}" echo "[STARTING] Receiver starting: No messages have been received as the container is still starting"
         new_msg_count=0
     elif (( new_msg_count == old_msg_count )); then
-        "${s6wrap[@]}" echo "[WARNING] Receiver appears stale: No messages received since last run of the Messages Monitor ($secs_since_last_check secs ago)"
-        if chk_enabled "$DUMP978_MSG_MONITOR_RESTART_WHEN_STALE"; then 
-            "${s6wrap[@]}" echo "[WARNING]                         Restarting the dump978 service..."
-            s6-svc -r /run/service/dump978 2>/dev/null || true
+        # only print and restart if we're within the adjustment timeframe
+        if (( $(date +%s) < $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} today" +%s) )); then
+            "${s6wrap[@]}" echo "[WARNING] Receiver appears stale: No messages received since last run of the Messages Monitor ($secs_since_last_check secs ago)"
+
+            if chk_enabled "$DUMP978_MSG_MONITOR_RESTART_WHEN_STALE"; then
+                "${s6wrap[@]}" echo "[WARNING]                         Restarting the dump978 service..."
+                s6-svc -r /run/service/dump978 2>/dev/null || true
+            fi
         fi
     elif (( new_msg_count > old_msg_count )); then
         "${s6wrap[@]}" echo "[INFO] Receiver is OK: $(( new_msg_count - old_msg_count )) messages received since last run of the Messages Monitor ($secs_since_last_check secs ago)"
