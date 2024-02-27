@@ -15,31 +15,21 @@ DUMP978_CMD+=("--json-port 0.0.0.0:30979")
 DUMP978_CMD+=("--format CS8")
 
 # Handle "--sdr"
-if [[ -n "${DUMP978_DEVICE_TYPE:-rtlsdr}" ]]; then
-    case "${DUMP978_DEVICE_TYPE:-rtlsdr}" in
-        rtlsdr)
-            if [[ -n "${DUMP978_RTLSDR_DEVICE}" ]]; then
-                DUMP978_CMD+=("--sdr driver=rtlsdr,serial=${DUMP978_RTLSDR_DEVICE}")
-            else
-                DUMP978_CMD+=("--sdr driver=rtlsdr")
-            fi
-        ;;
-        stratuxv3)
-            if [[ -n "${DUMP978_STRATUXV3_DEVICE}" ]]; then
-                DUMP978_CMD+=("--stratuxv3 ${DUMP978_STRATUXV3_DEVICE}")
-            else
-                "${s6wrap[@]}" echo "ERROR: Please set DUMP978_STRATUXV3_DEVICE!"
-                sleep 60
-                exit 1
-            fi
-        ;;
-        *)
-            "${s6wrap[@]}" echo "ERROR: Unsupported DUMP978_DEVICE_TYPE!"
-            sleep 60
-            exit 1
-        ;;
-    esac
-fi
+case "${DUMP978_DEVICE_TYPE:-rtlsdr}" in
+    rtlsdr)
+        DUMP978_CMD+=("--sdr driver=rtlsdr${DUMP978_RTLSDR_DEVICE:+,serial=${DUMP978_RTLSDR_DEVICE}}")
+        DUMP978_CMD+=("--format=CS8")
+    ;;
+    stratuxv3)
+        DUMP978_CMD+=("--stratuxv3 ${DUMP978_STRATUXV3_DEVICE:-/dev/uatradio}")
+    ;;
+    *)
+        "${s6wrap[@]}" echo "ERROR: Unsupported DUMP978_DEVICE_TYPE!"
+        sleep 60
+        exit 1
+    ;;
+esac
+
 
 # Handle "--sdr-auto-gain"
 if [[ -n "$DUMP978_SDR_AGC" ]]; then
