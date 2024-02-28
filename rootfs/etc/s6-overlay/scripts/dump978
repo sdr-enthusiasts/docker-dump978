@@ -16,7 +16,7 @@ DUMP978_CMD+=("--json-port 0.0.0.0:30979")
 case "${DUMP978_DEVICE_TYPE:-rtlsdr}" in
     rtlsdr)
         DUMP978_CMD+=("--sdr driver=rtlsdr${DUMP978_RTLSDR_DEVICE:+,serial=${DUMP978_RTLSDR_DEVICE}}")
-        DUMP978_CMD+=("--format=CS8")
+        DUMP978_CMD+=("--format CS8")
     ;;
     stratuxv3)
         DUMP978_CMD+=("--stratuxv3 ${DUMP978_STRATUXV3_DEVICE:-/dev/uatradio}")
