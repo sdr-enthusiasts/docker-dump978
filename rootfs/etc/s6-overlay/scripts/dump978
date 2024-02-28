@@ -12,8 +12,6 @@ DUMP978_CMD=("--raw-port 0.0.0.0:30978")
 # Listen on 0.0.0.0:DUMP978_JSON_PORT for json messages
 DUMP978_CMD+=("--json-port 0.0.0.0:30979")
 
-DUMP978_CMD+=("--format CS8")
-
 # Handle "--sdr"
 case "${DUMP978_DEVICE_TYPE:-rtlsdr}" in
     rtlsdr)
