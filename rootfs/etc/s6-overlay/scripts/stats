@@ -13,4 +13,4 @@ fi
 sleep 5
 
 # shellcheck disable=SC2016
-s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args python3 -u /scripts/stats.py
+exec s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args python3 -u /scripts/stats.py

@@ -7,7 +7,7 @@ set -eo pipefail
 
 # If the telegraf binary is not present, then do nothing:
 if [[ ! -f /usr/bin/telegraf ]]; then
-  sleep infinity
+  exec sleep infinity
 fi
 
 if [ -z "$INFLUXDB_SKIP_AIRCRAFT" ] && { [ -n "$INFLUXDBURL" ] || [ -n "$ENABLE_PROMETHEUS" ]; } then
@@ -23,8 +23,8 @@ if [ -z "$INFLUXDB_SKIP_AIRCRAFT" ] && { [ -n "$INFLUXDBURL" ] || [ -n "$ENABLE_
   SOCAT_CMD+=("TCP:localhost:33979")
 
   # shellcheck disable=SC2016
-  s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args "${SOCAT_BIN}" "${SOCAT_CMD[@]}"
+  exec s6wrap --quiet --timestamps --prepend="$(basename "$0")" --args "${SOCAT_BIN}" "${SOCAT_CMD[@]}"
 
 else
-  sleep infinity
+  exec sleep infinity
 fi
