@@ -28,4 +28,4 @@ fi
 
 "${s6wrap[@]}" echo "invoking: $SKY_BIN ${SKY_ARGS[*]}"
 # shellcheck disable=SC2068
-"${s6wrap[@]}" $SKY_BIN ${SKY_ARGS[@]}
+exec "${s6wrap[@]}" $SKY_BIN ${SKY_ARGS[@]}

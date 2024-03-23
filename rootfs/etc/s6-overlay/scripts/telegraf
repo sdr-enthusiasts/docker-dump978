@@ -16,5 +16,5 @@ if [[ -n "$INFLUXDBURL" ]] || [ -n "$ENABLE_PROMETHEUS" ]; then
     --config-directory /etc/telegraf/telegraf.d \
     | grep -v "Error in plugin"
 else
-  sleep infinity
+  exec sleep infinity
 fi
