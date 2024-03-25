@@ -278,7 +278,7 @@ You should now be feeding ADSB-ES & UAT to the "new" aggregators, FlightAware, a
 | `LAT`    | Latitude of your receiver. Only required if you want range statistics for InfluxDB, Prometheus, or tar1090/ultrafeeder graphs. | Unset   |
 | `LON`    | Longitude of your receiver. Only required if you want range statistics for InfluxDB, Prometheus, or tar1090/ultrafeeder graphs. | Unset   |
 | `DUMP978_MSG_MONITOR_INTERVAL` | Interval between runs of the Message Monitor that checks if new messages are received. Format of value is anything that is accepted by the Linux `sleep` command | Unset (30 minutes) |
-| `DUMP978_MSG_MONITOR_RESTART_WHEN_STALE` | If set to `true`/`on`/`yes`/`1`, the receiver process is restarted when no messages are received during the monitoring interval | Unset (`false`) |
+| `DUMP978_MSG_MONITOR_RESTART_WHEN_STALE` | If set to `true`/`on`/`yes`/`1`, the receiver process is restarted when no messages are received during the monitoring interval | `true` |
 
 ### `dump978-fa` General Options
 
