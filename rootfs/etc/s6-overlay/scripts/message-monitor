@@ -4,7 +4,12 @@
 source /scripts/common
 mkdir -p /run/stats
 s6wrap=(s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args)
+
+# Adjustment Timeframe is the same as used for AutoGain, with a default of 0800-1800 "container time" if omitted
 READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME="${DUMP978_AUTOGAIN_ADJUSTMENT_TIMEFRAME:-${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME:-0800-1800}}"
+
+# Restart When Stale is default-TRUE. This is acceptable - worst case, we'd restart the dump978 s6 service once every 30 minutes
+DUMP978_MSG_MONITOR_RESTART_WHEN_STALE="${DUMP978_MSG_MONITOR_RESTART_WHEN_STALE:-true}"
 
 while :
 do
