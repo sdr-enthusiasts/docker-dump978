@@ -35,11 +35,8 @@ RUN set -x && \
     TEMP_PACKAGES=() && \
     KEPT_PACKAGES=() && \
     # Essentials
-    TEMP_PACKAGES+=(build-essential) && \
     TEMP_PACKAGES+=(ca-certificates) && \
-    TEMP_PACKAGES+=(cmake) && \
     TEMP_PACKAGES+=(curl) && \
-    TEMP_PACKAGES+=(git) && \
     # Required for nicer logging.
     KEPT_PACKAGES+=(gawk) && \
     # uat2esnt dependencies (+ telegraf)
@@ -50,7 +47,6 @@ RUN set -x && \
     KEPT_PACKAGES+=(lighttpd) && \
     KEPT_PACKAGES+=(lighttpd-mod-magnet) && \
     # wreadsb deps
-    KEPT_PACKAGES+=(libncurses5) && \
     KEPT_PACKAGES+=(zlib1g) && \
     KEPT_PACKAGES+=(libzstd1) && \
     KEPT_PACKAGES+=(libncurses6) && \
@@ -65,20 +61,7 @@ RUN set -x && \
     curl -o /etc/s6-overlay/scripts/05-rtlsdr-biastee-down https://raw.githubusercontent.com/sdr-enthusiasts/sdre-bias-t-common/main/09-rtlsdr-biastee-down && \
     chmod +x /etc/s6-overlay/scripts/05-rtlsdr-biastee-init && \
     chmod +x /etc/s6-overlay/scripts/05-rtlsdr-biastee-down && \
-    git config --global advice.detachedHead false && \
-    # Build & install uat2esnt
-    git clone --branch=master --single-branch --depth=1 "https://github.com/adsbxchange/uat2esnt.git" "/src/uat2esnt" && \
-    pushd "/src/uat2esnt" && \
-    # Fix build error with bookworm
-    sed -i 's/ -Werror//' Makefile && \
-    echo "uat2esnt $(git log | head -1)" >> /VERSIONS && \
-    make all test && \
-    cp -v ./uat2text /usr/local/bin/ && \
-    cp -v ./uat2esnt /usr/local/bin/ && \
-    cp -v ./uat2json /usr/local/bin/ && \
-    cp -v ./extract_nexrad /usr/local/bin/ && \
     mkdir -p /run/skyaware978 && \
-    popd && \
     mkdir -p /run/stats && \
     mkdir -p /run/autogain && \
     ##telegraf##mkdir -p /etc/telegraf/telegraf.d && \
