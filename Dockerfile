@@ -53,7 +53,6 @@ RUN set -x && \
     KEPT_PACKAGES+=(libncurses5) && \
     KEPT_PACKAGES+=(zlib1g) && \
     KEPT_PACKAGES+=(libzstd1) && \
-    KEPT_PACKAGES+=(librtlsdr0) && \
     KEPT_PACKAGES+=(libncurses6) && \
     # Install packages.
     apt-get update && \
