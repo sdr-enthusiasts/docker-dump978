@@ -21,6 +21,6 @@ jobs:
         with:
           python-version: "3.9"
       - name: flake8 Lint
-        uses: py-actions/flake8@v2
+        uses: py-actions/flake8@v2.3.0
         with:
           ignore: "E501"
