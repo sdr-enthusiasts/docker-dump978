@@ -104,11 +104,15 @@ Here is an example `docker-compose.yml`:
     labels:
       - "autoheal=true"
     device_cgroup_rules:
+      - 'c 188:* rwm'
       - 'c 189:* rwm'
     environment:
       - TZ=${FEEDER_TZ}
       - LAT=${FEEDER_LAT}
       - LON=${FEEDER_LONG}
+      # for stratuxv3 uncomment the following line
+      #- DUMP978_DEVICE_TYPE=stratuxv3
+      # for stratuxv3 remove the next 3 lines
       - DUMP978_RTLSDR_DEVICE=${UAT_SDR_SERIAL}
       - DUMP978_SDR_GAIN=${UAT_SDR_GAIN}
       - DUMP978_SDR_PPM=${UAT_SDR_PPM}
@@ -286,7 +290,7 @@ Where the default value is "Unset", `dump978-fa`'s default will be used.
 
 | Variable | Description | Controls which `dump978-fa` option | Default |
 |----------|-------------|--------------------------------|---------|
-| `DUMP978_DEVICE_TYPE` | Currently only `rtlsdr` is supported. If you have another type of radio, please open an issue and I'll try to get it added. | `--sdr driver=` | `rtlsdr` |
+| `DUMP978_DEVICE_TYPE` | Currently only `rtlsdr` and `stratuxv3` is supported. If you have another type of radio, please open an issue and I'll try to get it added. | `--sdr driver=` | `rtlsdr` |
 | `DUMP978_SDR_AGC` | Set to any value to enable SDR AGC. | `--sdr-auto-gain` | Unset |
 | `DUMP978_SDR_GAIN` | Set gain (in dB). Use autogain to have the container determine an appropriate gain, more on this below. | `--sdr-gain` | Unset |
 | `DUMP978_SDR_PPM` | Set SDR frequency correction in PPM. | `--sdr-ppm` | Unset |
