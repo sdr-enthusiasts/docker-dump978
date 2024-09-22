@@ -39,7 +39,7 @@ RUN set -x && \
     TEMP_PACKAGES+=(curl) && \
     # Required for nicer logging.
     KEPT_PACKAGES+=(gawk) && \
-    KEPT_PACKAGES+=(python3) && \
+    ##telegraf##KEPT_PACKAGES+=(python3) && \
     # uat2esnt dependencies (+ telegraf)
     KEPT_PACKAGES+=(socat) && \
     # healthcheck dependencies
