@@ -90,7 +90,7 @@ function collect_gain_values() {
     exec 3>&-
 
     GAIN_COLLECTION="$total_msg;$strong_msg;"
-    if (( strong_msg * total_msg > 0 )); then
+    if (( total_msg > 0 )); then
         GAIN_COLLECTION="${GAIN_COLLECTION}$(bc -l <<< "scale=1; 100 * $strong_msg / $total_msg / 1")"
     else
         GAIN_COLLECTION="${GAIN_COLLECTION}na"
