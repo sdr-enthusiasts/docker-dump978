@@ -35,7 +35,7 @@ function collect_gain_values() {
     local rssi
     local endtime
     local cutoff="${2:--3.5}"
-    cutoff="$(bc -l <<< "scale=0; ${cutoff/#-} * 10 / 1")"
+    cutoff="$(bc -l <<< "scale=0; ${cutoff} * 10 / 1")"
     unset GAIN_COLLECTION
 
     if [[ -z "$1" ]]; then
@@ -57,7 +57,7 @@ function collect_gain_values() {
     # create a FD with a data stream of rssi values
     if chk_enabled "$READSB_AUTOGAIN_USE_RAW"; then
         # parse all messages that have an ";rssi=-xx.xx" element, regardless of any error indicators 
-        while ! exec 3< <(stdbuf -oL sed -n 's|^.*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' </dev/tcp/localhost/30978 2>/dev/null) 2>/dev/null; do
+        while ! exec 3< <(stdbuf -oL sed -n 's|^.*;rssi=\([0-9-]\+\)\.\([0-9]*\);.*$|\1\2|p' </dev/tcp/localhost/30978 2>/dev/null) 2>/dev/null; do
             sleep 5
             exec 3>&-
         done
@@ -65,7 +65,7 @@ function collect_gain_values() {
         # ignore messages that have anything between the raw message string and ";rssi="
         # These messages have an error code ";ts=x" between the raw msg and the rssi element
         # In that case, we're only considering "accepted" messages
-        while ! exec 3< <(stdbuf -oL sed -n 's|^-[0-9a-f]*;rssi=-\([0-9]\+\)\.\([0-9]*\);.*$|\1\2|p' </dev/tcp/localhost/30978 2>/dev/null) 2>/dev/null; do
+        while ! exec 3< <(stdbuf -oL sed -n 's|^-[0-9a-f]*;rssi=\([0-9-]\+\)\.\([0-9]*\);.*$|\1\2|p' </dev/tcp/localhost/30978 2>/dev/null) 2>/dev/null; do
             sleep 5
             exec 3>&-
         done
@@ -76,8 +76,8 @@ function collect_gain_values() {
     starttime="$(date +%s)"
     while IFS= read -r rssi <&3; do
         (( total_msg++ )) || true
-        (( ${rssi##0} < cutoff )) && (( strong_msg++ )) || true
-        # read messages until we have least READSB_AUTOGAIN_MIN_SAMPLES, and the max time is exhausted
+        (( ${rssi##0} > cutoff )) && (( strong_msg++ )) || true
+s6wrap --quiet --timestamps --prepend autogain echo "sample count: $total_msg"
         # in other words - even if the max time expires, continue collecting messages until at least the minimum has been reached
         if (( total_msg >= READSB_AUTOGAIN_MIN_SAMPLES )) && (( $(date +%s) > starttime + $1 )); then
             break
