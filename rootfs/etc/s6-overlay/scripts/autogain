@@ -77,7 +77,7 @@ function collect_gain_values() {
     while IFS= read -r rssi <&3; do
         (( total_msg++ )) || true
         (( ${rssi##0} > cutoff )) && (( strong_msg++ )) || true
-s6wrap --quiet --timestamps --prepend autogain echo "sample count: $total_msg"
+        # read messages until we have least READSB_AUTOGAIN_MIN_SAMPLES, and the max time is exhausted
         # in other words - even if the max time expires, continue collecting messages until at least the minimum has been reached
         if (( total_msg >= READSB_AUTOGAIN_MIN_SAMPLES )) && (( $(date +%s) > starttime + $1 )); then
             break
