@@ -1,6 +1,8 @@
 #!/command/with-contenv bash
 # shellcheck shell=bash
 
+# !!! DEPRECATED !!!
+
 # If troubleshooting:
 if [[ -n "$DEBUG_LOGGING" ]]; then
     set -x
