@@ -3,6 +3,9 @@
 
 # This script is only for dump978 autogain
 
+# called by /etc/s6-overlay/scripts/autogain
+# or called manually by the user to reset autogain
+
 source /scripts/common
 
 READSB_AUTOGAIN_LOW_PCT="${DUMP978_AUTOGAIN_LOW_PCT:-${READSB_AUTOGAIN_LOW_PCT:-5.0}}"
@@ -43,8 +46,8 @@ if [[ -z $oldstrong ]] || [[ -z $oldtotal ]]; then
 fi
 
 # use the values that were passed in via the commandline. Format is "total;strong;strong_pct" but we only use total and strong here
-total="$(awk -F';' '{print $1}' <<< "$1" | tee $autogain_dir/strong)"
-strong="$(awk -F';' '{print $2}' <<< "$1"| tee $autogain_dir/total)"
+total="$(awk -F';' '{print $1}' <<< "$1" | tee $autogain_dir/total)"
+strong="$(awk -F';' '{print $2}' <<< "$1"| tee $autogain_dir/strong)"
 
 if [[ -z "$strong" ]] || [[ -z "$total" ]]; then
     echo "[INFO] Stats not yet ready. Skipping this $(basename "$0") run"
