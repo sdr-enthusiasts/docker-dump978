@@ -97,7 +97,6 @@ Here is an example `docker-compose.yml`:
     image: ghcr.io/sdr-enthusiasts/docker-dump978:latest
 #    profiles:
 #      - donotstart
-    tty: true
     container_name: dump978
     hostname: dump978
     restart: always
@@ -126,7 +125,6 @@ Here is an example `docker-compose.yml`:
 
 ultrafeeder:
   image: ghcr.io/sdr-enthusiasts/docker-adsb-ultrafeeder
-  tty: true
   container_name: ultrafeeder
   hostname: ultrafeeder
   restart: unless-stopped
@@ -222,7 +220,6 @@ piaware:
   image: ghcr.io/sdr-enthusiasts/docker-piaware
   # profiles:
   #   - donotstart
-  tty: true
   container_name: piaware
   hostname: piaware
   restart: always
@@ -249,7 +246,6 @@ rbfeeder:
   image: ghcr.io/sdr-enthusiasts/docker-radarbox
   # profiles:
   #   - donotstart
-  tty: true
   container_name: rbfeeder
   hostname: rbfeeder
   restart: always
