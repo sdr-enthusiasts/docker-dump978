@@ -346,6 +346,7 @@ These variables control the autogain system (explained further below). These sho
 | `DUMP978_AUTOGAIN_INITIAL_TIMEPERIOD` | How long the autogain initialization phase should take (ie: "roughing in"), in seconds. | `32400` (9 hours) |
 | `DUMP978_AUTOGAIN_INITIAL_INTERVAL` | How often autogain should measure and adjust the gain during the initialization phase, in seconds. | `900` (15 minutes) |
 | `DUMP978_AUTOGAIN_SUBSEQUENT_INTERVAL` | How often autogain should measure and adjust the gain after the initialization phase is done, in seconds. | `84600` (24 hours) |
+| `DUMP978_AUTOGAIN_INITIAL_GAIN` | The gain level autogain should start with, in dB. | `49.6` (49.6 dB) |
 | `DUMP978_AUTOGAIN_ADJUSTMENT_LIMITS` | If set to `true`/`on`/`yes`/`1`, while in the initialization phase, autogain will only adjust the gain during the timeframe set by the `DUMP978_AUTOGAIN_ADJUSTMENT_TIMEFRAME` parameter. | `true` |
 | `DUMP978_AUTOGAIN_ADJUSTMENT_TIMEFRAME` | Timeframe limits for autogain during the initializaion phase, in `HHMM-HHMM` (start hours/minutes to end hours/minutes). If an adjustment "run" falls outside these limits, the autogain adjustment is delayed until the start of the next timeframe. Times are based on the container's Timezone (`TZ`) setting. | `0900-1800` (9 AM - 6 PM, local container time) |
 | `DUMP978_AUTOGAIN_LOW_PCT` | If the percentage of "strong signals" (>3.5dB) over a measuring period is less than this parameter, the gain will be increased by 1 position | `5.0` (5.0%) |

@@ -8,10 +8,16 @@ trap 'pkill -P $$ || true; exit 0' SIGTERM SIGINT SIGHUP SIGQUIT
 # Autogain routine
 #
 # Relevant env variables:
-#   DUMP978_GAIN or READSB_GAIN: set to "autogain" to enable autogain
-#   DUMP978_AUTOGAIN_INITIAL_INTERVAL or READSB_AUTOGAIN_INITIAL_INTERVAL: time in seconds to run autogain during initial assessment period; 600 (=10 minutes)
-#   DUMP978_AUTOGAIN_SUBSEQUENT_INTERVAL or READSB_AUTOGAIN_SUBSEQUENT_INTERVAL: time in seconds to run autogain during initial assessment period; 86400 (=1 day)
-#   DUMP978_AUTOGAIN_INITIAL_TIMEPERIOD or READSB_AUTOGAIN_INITIAL_TIMEPERIOD: time in seconds that the initial gain assessment will last. Default 14400 (=4 hours)
+#   DUMP978_SDR_GAIN or READSB_SDR_GAIN: set to "autogain" to enable autogain
+#   DUMP978_AUTOGAIN_INITIAL_INTERVAL or READSB_AUTOGAIN_INITIAL_INTERVAL: time in seconds to run autogain during initial assessment period; default is 900 (=15 minutes)
+#   DUMP978_AUTOGAIN_SUBSEQUENT_INTERVAL or READSB_AUTOGAIN_SUBSEQUENT_INTERVAL: time in seconds to run autogain during subsequent assessment periods; default is 86400 (=1 day)
+#   DUMP978_AUTOGAIN_INITIAL_TIMEPERIOD or READSB_AUTOGAIN_INITIAL_TIMEPERIOD: time in seconds that the initial gain assessment will last; default is 32400 (=9 hours)
+#   DUMP978_AUTOGAIN_ADJUSTMENT_TIMEFRAME or READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME: time frame during which gain adjustments are allowed; default is 0800-1800
+#   DUMP978_AUTOGAIN_ADJUSTMENT_LIMITS or READSB_AUTOGAIN_ADJUSTMENT_LIMITS: whether to enforce adjustment limits based on the time frame; default is true
+#   DUMP978_AUTOGAIN_STRONGSIGNAL_LIMIT or READSB_AUTOGAIN_STRONGSIGNAL_LIMIT: RSSI value for strong signals; default is -3.5
+#   DUMP978_AUTOGAIN_USE_RAW or READSB_AUTOGAIN_USE_RAW: whether to use raw messages for gain calculation; default is true
+#   DUMP978_AUTOGAIN_MIN_SAMPLES or READSB_AUTOGAIN_MIN_SAMPLES: minimum number of samples required for gain calculation; default is 1000
+#   DUMP978_AUTOGAIN_INITIAL_GAIN or READSB_AUTOGAIN_INITIAL_GAIN: initial gain value for autogain if raw value is used; default is 49.6
 # Command to restart autogain: docker exec -it dump978 /usr/local/bin/autogain978 reset
 
 # make READSB_AUTOGAIN.... the same as DUMP978_AUTOGAIN with the latter as preferred parameter
@@ -56,7 +62,7 @@ function collect_gain_values() {
     exec 3>&-
     # create a FD with a data stream of rssi values
     if chk_enabled "$READSB_AUTOGAIN_USE_RAW"; then
-        # parse all messages that have an ";rssi=-xx.xx" element, regardless of any error indicators 
+        # parse all messages that have an ";rssi=-xx.xx" element, regardless of any error indicators
         while ! exec 3< <(stdbuf -oL sed -n 's|^.*;rssi=\([0-9-]\+\)\.\([0-9]*\);.*$|\1\2|p' </dev/tcp/localhost/30978 2>/dev/null) 2>/dev/null; do
             sleep 5
             exec 3>&-
@@ -148,7 +154,7 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
             # current time is after close of window; delay until window starts tomorrow
             now_in_secs="$(date +%s)"
             resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} today" +%s)"
-            if (( resumetime_in_secs < now_in_secs )); then resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow" +%s)"; fi 
+            if (( resumetime_in_secs < now_in_secs )); then resumetime_in_secs="$(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow" +%s)"; fi
             s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[INFO] Too late: current time outside of ${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME} adjustment time window. We will delay until $(date -d "${READSB_AUTOGAIN_ADJUSTMENT_TIMEFRAME%%-*} tomorrow"), in $((resumetime_in_secs - now_in_secs))s"
             sleep "$((resumetime_in_secs - now_in_secs))s" & wait $!
         fi
@@ -162,13 +168,13 @@ if [[ ! -f /var/globe_history/autogain/autogain_initialized ]]; then
             msg_stats="0;0;na"
         fi
         s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args echo "[INFO] Data collection is complete for initialization run $i of $(( READSB_AUTOGAIN_INITIAL_TIMEPERIOD / READSB_AUTOGAIN_INITIAL_INTERVAL )) (total_msg_count;strong_msg_count;%strong=$msg_stats)"
-        if [[ $msg_stats == "0;0;na" ]] || ! s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978 "$msg_stats"; then 
+        if [[ $msg_stats == "0;0;na" ]] || ! s6wrap --quiet --prepend="$(basename "$0")" --timestamps --args /usr/local/bin/autogain978 "$msg_stats"; then
             ((i--)) || true
         fi
 
         # write back the current run number:
         echo "$i" > /var/globe_history/autogain/init_runs_count
-        # sleep a little bit so dump978 is again providing data 
+        # sleep a little bit so dump978 is again providing data
         sleep 15 & wait $!
 
     done
