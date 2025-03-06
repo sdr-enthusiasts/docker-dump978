@@ -13,10 +13,10 @@ fi
 if [ -z "$INFLUXDB_SKIP_AIRCRAFT" ] && { [ -n "$INFLUXDBURL" ] || [ -n "$ENABLE_PROMETHEUS" ]; } then
 
   SOCAT_BIN="$(which socat)"
-  SOCAT_CMD=(-ls)
+  SOCAT_CMD=()
 
   if [ "$VERBOSE_LOGGING" = "true" ]; then
-    SOCAT_CMD+=("-d -d")
+    SOCAT_CMD+=("-d" "-d")
   fi
 
   SOCAT_CMD+=("TCP:localhost:30979")
