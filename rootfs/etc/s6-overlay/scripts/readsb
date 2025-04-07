@@ -13,8 +13,7 @@ READSB_ARGS+=("--net")
 READSB_ARGS+=("--quiet")
 READSB_ARGS+=("--net-connector 127.0.0.1,30978,uat_in")
 READSB_ARGS+=("--net-ro-port 37981")
-READSB_ARGS+=("--net-bo-port 37982")
-READSB_ARGS+=("--net-bo-port 30005")
+READSB_ARGS+=("--net-bo-port 37982,30005")
 
 "${s6wrap[@]}" echo "invoking: ${READSB_BIN} ${READSB_ARGS[*]}"
 
