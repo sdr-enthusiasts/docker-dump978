@@ -29,13 +29,6 @@ if [[ "$DUMP978_DEVICE_TYPE" == "rtlsdr" ]]; then
     rm "$biast_tempfile"
 fi
 
-# Ensure viewadsb exists:
-if [[ ! -f /usr/local/bin/viewadsb ]]; then
-    echo '#!/bin/bash' > /usr/local/bin/viewadsb
-    echo '/usr/bin/readsb --interactive --net --net-only --net-connector 127.0.0.1,30978,uat_in $@' >> /usr/local/bin/viewadsb
-    chmod a+x /usr/local/bin/viewadsb
-fi
-
 # make sure  directories exist
 mkdir -p /run/skyaware978
 mkdir -p /run/stats
