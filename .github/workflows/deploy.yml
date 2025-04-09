@@ -50,11 +50,9 @@ jobs:
     uses: sdr-enthusiasts/common-github-workflows/.github/workflows/build_and_push_image.yml@main
     with:
       push_enabled: true
-      push_destinations: ghcr.io;dockerhub
+      push_destinations: ghcr.io
       ghcr_repo_owner: ${{ github.repository_owner }}
       ghcr_repo: ${{ github.repository }}
-      dockerhub_profile: mikenye
-      dockerhub_repo: dump978
       get_version_method: git_commit_hash_short
       # set build_latest to true if github.event.inputs.use_test_image is false
       build_latest: ${{ github.event.inputs.use_test_image == 'false' || github.event.inputs.use_test_image == '' }}
@@ -66,18 +64,15 @@ jobs:
       build_baseimage_url: :wreadsb/:wreadsb-test-pr/g;s/:dump978-full/:dump978-full-test-pr
     secrets:
       ghcr_token: ${{ secrets.GITHUB_TOKEN }}
-      dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
 
   deploy_with_telegraf:
     name: Deploy with telegraf and healthcheck
     uses: sdr-enthusiasts/common-github-workflows/.github/workflows/build_and_push_image.yml@main
     with:
       push_enabled: true
-      push_destinations: ghcr.io;dockerhub
+      push_destinations: ghcr.io
       ghcr_repo_owner: ${{ github.repository_owner }}
       ghcr_repo: ${{ github.repository }}
-      dockerhub_profile: mikenye
-      dockerhub_repo: dump978
       get_version_method: git_commit_hash_short
       # set build_latest to true if github.event.inputs.use_test_image is false
       build_latest: ${{ github.event.inputs.use_test_image == 'false' || github.event.inputs.use_test_image == '' }}
@@ -92,4 +87,3 @@ jobs:
         ##telegraf##/
     secrets:
       ghcr_token: ${{ secrets.GITHUB_TOKEN }}
-      dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
