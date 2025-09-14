@@ -13,7 +13,7 @@ repos:
 
   # lint the dockerfiles
   - repo: https://github.com/hadolint/hadolint
-    rev: c3dc18df7a501f02a560a2cc7ba3c69a85ca01d3  # frozen: v2.13.1-beta
+    rev: 87de847754330ad47ae16bdfe2d1a757ccb4b4d4  # frozen: v2.13.1
     hooks:
       - id: hadolint
 
@@ -41,7 +41,7 @@ repos:
       - id: shellcheck
 
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 54da05914997e6b04e4db33ed6757d744984c68b  # frozen: 0.33.2
+    rev: 9b9df9f1d3bd9a5e7a52d8f61a3be3e29e73d127  # frozen: 0.33.3
     hooks:
       - id: check-github-actions
       - id: check-github-workflows
