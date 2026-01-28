@@ -43,7 +43,7 @@ jobs:
           echo "Build latest as test: $INPUTS_BUILD_LATEST_AS_TEST"
 
   deploy:
-    name: Deploy
+    name: Deploy without telegraf
     if: |
       github.event.inputs.build_latest_as_test == 'false' ||
       github.event.inputs.build_latest_as_test == ''
@@ -57,6 +57,27 @@ jobs:
       build_latest: true
       docker_latest_tag: trixie-latest
       build_baseimage_test: true
-      build_baseimage_url: :dump978-full/:trixie-dump978-full
+      build_baseimage_url: :wreadsb/:trixie-wreadsb/g;s/:dump978-full/:trixie-dump978-full
+    secrets:
+      ghcr_token: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy_with_telegraf:
+    name: Deploy with telegraf and healthcheck
+    if: |
+      github.event.inputs.build_latest_as_test == 'false' ||
+      github.event.inputs.build_latest_as_test == ''
+    uses: sdr-enthusiasts/common-github-workflows/.github/workflows/sdre.yml@main
+    with:
+      push_enabled: true
+      push_destinations: ghcr.io
+      ghcr_repo_owner: ${{ github.repository_owner }}
+      ghcr_repo: ${{ github.repository }}
+      # set build_latest to true if github.event.inputs.use_test_image is false
+      build_latest: ${{ github.event.inputs.use_test_image == 'false' || github.event.inputs.use_test_image == '' }}
+      build_baseimage_test: ${{ github.event.inputs.use_test_image == 'true' }}
+      build_baseimage_url: :wreadsb/:trixie-wreadsb/g;s/:dump978-full/:trixie-dump978-full
+      docker_latest_tag: trixie-telegraf
+      dockerfile_changes: |
+        ##telegraf##/
     secrets:
       ghcr_token: ${{ secrets.GITHUB_TOKEN }}
