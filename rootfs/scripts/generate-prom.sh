@@ -9,7 +9,7 @@ TMP=/run/skyaware978/stats.prom.tmp
 
 function generate() {
     if [[ -f "$GAIN_VALUE_FILE" ]]; then
-        echo "autogain_current_value=$(cat "$GAIN_VALUE_FILE")"
+        echo "autogain_current_value $(cat "$GAIN_VALUE_FILE")"
     fi
 }
 
