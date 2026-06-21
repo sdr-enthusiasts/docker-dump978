@@ -50,9 +50,9 @@ The container listens on the following TCP ports:
 
 ## Paths & Volumes
 
-| Path (inside container) | Details |
-|-------------------------|---------|
-| `/var/globe_history` | Map this to persistant storage if you set `DUMP978_SDR_GAIN=autogain` |
+| Path (inside container) | Details                                                               |
+| ----------------------- | --------------------------------------------------------------------- |
+| `/var/globe_history`    | Map this to persistent storage if you set `DUMP978_SDR_GAIN=autogain` |
 
 ## Up and Running - `docker run`
 
@@ -272,25 +272,25 @@ You should now be feeding ADSB-ES & UAT to the "new" aggregators, FlightAware, a
 
 ### Container Options
 
-| Variable | Description                                                                                                                                 | Default |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `TZ`     | Local timezone in ["TZ database name" format](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).                                | `UTC`   |
-| `LAT`    | Latitude of your receiver. Only required if you want range statistics for InfluxDB, Prometheus, or tar1090/ultrafeeder graphs. | Unset   |
-| `LON`    | Longitude of your receiver. Only required if you want range statistics for InfluxDB, Prometheus, or tar1090/ultrafeeder graphs. | Unset   |
-| `DUMP978_MSG_MONITOR_INTERVAL` | Interval between runs of the Message Monitor that checks if new messages are received. Format of value is anything that is accepted by the Linux `sleep` command | Unset (30 minutes) |
-| `DUMP978_MSG_MONITOR_RESTART_WHEN_STALE` | If set to `true`/`on`/`yes`/`1`, the receiver process is restarted when no messages are received during the monitoring interval | `true` |
+| Variable                                 | Description                                                                                                                                                      | Default            |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `TZ`                                     | Local timezone in ["TZ database name" format](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).                                                     | `UTC`              |
+| `LAT`                                    | Latitude of your receiver. Only required if you want range statistics for InfluxDB, Prometheus, or tar1090/ultrafeeder graphs.                                   | Unset              |
+| `LON`                                    | Longitude of your receiver. Only required if you want range statistics for InfluxDB, Prometheus, or tar1090/ultrafeeder graphs.                                  | Unset              |
+| `DUMP978_MSG_MONITOR_INTERVAL`           | Interval between runs of the Message Monitor that checks if new messages are received. Format of value is anything that is accepted by the Linux `sleep` command | Unset (30 minutes) |
+| `DUMP978_MSG_MONITOR_RESTART_WHEN_STALE` | If set to `true`/`on`/`yes`/`1`, the receiver process is restarted when no messages are received during the monitoring interval                                  | `true`             |
 
 ### `dump978-fa` General Options
 
 Where the default value is "Unset", `dump978-fa`'s default will be used.
 
-| Variable | Description | Controls which `dump978-fa` option | Default |
-|----------|-------------|--------------------------------|---------|
-| `DUMP978_DEVICE_TYPE` | Currently only `rtlsdr` and `stratuxv3` is supported. If you have another type of radio, please open an issue and I'll try to get it added. | `--sdr driver=` | `rtlsdr` |
-| `DUMP978_SDR_AGC` | Set to any value to enable SDR AGC. | `--sdr-auto-gain` | Unset |
-| `DUMP978_SDR_GAIN` | Set gain (in dB). Use autogain to have the container determine an appropriate gain, more on this below. | `--sdr-gain` | Unset |
-| `DUMP978_SDR_PPM` | Set SDR frequency correction in PPM. | `--sdr-ppm` | Unset |
-| `DUMP978_JSON_STDOUT` | Write decoded json to the container log. Useful for troubleshooting, but don't leave enabled! | `--json-stdout` | Unset |
+| Variable              | Description                                                                                                                                 | Controls which `dump978-fa` option | Default  |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | -------- |
+| `DUMP978_DEVICE_TYPE` | Currently only `rtlsdr` and `stratuxv3` is supported. If you have another type of radio, please open an issue and I'll try to get it added. | `--sdr driver=`                    | `rtlsdr` |
+| `DUMP978_SDR_AGC`     | Set to any value to enable SDR AGC.                                                                                                         | `--sdr-auto-gain`                  | Unset    |
+| `DUMP978_SDR_GAIN`    | Set gain (in dB). Use autogain to have the container determine an appropriate gain, more on this below.                                     | `--sdr-gain`                       | Unset    |
+| `DUMP978_SDR_PPM`     | Set SDR frequency correction in PPM.                                                                                                        | `--sdr-ppm`                        | Unset    |
+| `DUMP978_JSON_STDOUT` | Write decoded json to the container log. Useful for troubleshooting, but don't leave enabled!                                               | `--json-stdout`                    | Unset    |
 
 ### `dump978-fa` RTL-SDR Options
 
@@ -341,19 +341,19 @@ These variables control exposing flight data to [Prometheus](https://prometheus.
 
 These variables control the autogain system (explained further below). These should rarely need changing from the defaults.
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DUMP978_AUTOGAIN_INITIAL_TIMEPERIOD` | How long the autogain initialization phase should take (ie: "roughing in"), in seconds. | `32400` (9 hours) |
-| `DUMP978_AUTOGAIN_INITIAL_INTERVAL` | How often autogain should measure and adjust the gain during the initialization phase, in seconds. | `900` (15 minutes) |
-| `DUMP978_AUTOGAIN_SUBSEQUENT_INTERVAL` | How often autogain should measure and adjust the gain after the initialization phase is done, in seconds. | `84600` (24 hours) |
-| `DUMP978_AUTOGAIN_INITIAL_GAIN` | The gain level autogain should start with, in dB. | `49.6` (49.6 dB) |
-| `DUMP978_AUTOGAIN_ADJUSTMENT_LIMITS` | If set to `true`/`on`/`yes`/`1`, while in the initialization phase, autogain will only adjust the gain during the timeframe set by the `DUMP978_AUTOGAIN_ADJUSTMENT_TIMEFRAME` parameter. | `true` |
-| `DUMP978_AUTOGAIN_ADJUSTMENT_TIMEFRAME` | Timeframe limits for autogain during the initializaion phase, in `HHMM-HHMM` (start hours/minutes to end hours/minutes). If an adjustment "run" falls outside these limits, the autogain adjustment is delayed until the start of the next timeframe. Times are based on the container's Timezone (`TZ`) setting. | `0900-1800` (9 AM - 6 PM, local container time) |
-| `DUMP978_AUTOGAIN_LOW_PCT` | If the percentage of "strong signals" (>3.5dB) over a measuring period is less than this parameter, the gain will be increased by 1 position | `5.0` (5.0%) |
-| `DUMP978_AUTOGAIN_HIGH_PCT` | If the percentage of "strong signals" (>3.5dB) over a measuring period is more than this parameter, the gain will be decreased by 1 position | `10.0` (10.0%) |
-| `READSB_AUTOGAIN_MIN_SAMPLES` | Minimum number of received samples for autogain to be able to consider adjusting the gain | `1000` |
-| `READSB_AUTOGAIN_USE_RAW` |  If set to `true`/`on`/`yes`/`1`, the autogain function will use the "raw" message count rather than the "accepted" message count. | `true` |
-| `SUBSEQUENT_INTERVAL_MINIMUM_COMPLETION_PCT` | Minimum percentage of `DUMP978_AUTOGAIN_SUBSEQUENT_INTERVAL` time that needs to be completed before autogain will use the collected data during the subsequent/long-term process | `50` |
+| Variable                                     | Description                                                                                                                                                                                                                                                                                                       | Default                                         |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `DUMP978_AUTOGAIN_INITIAL_TIMEPERIOD`        | How long the autogain initialization phase should take (ie: "roughing in"), in seconds.                                                                                                                                                                                                                           | `32400` (9 hours)                               |
+| `DUMP978_AUTOGAIN_INITIAL_INTERVAL`          | How often autogain should measure and adjust the gain during the initialization phase, in seconds.                                                                                                                                                                                                                | `900` (15 minutes)                              |
+| `DUMP978_AUTOGAIN_SUBSEQUENT_INTERVAL`       | How often autogain should measure and adjust the gain after the initialization phase is done, in seconds.                                                                                                                                                                                                         | `84600` (24 hours)                              |
+| `DUMP978_AUTOGAIN_INITIAL_GAIN`              | The gain level autogain should start with, in dB.                                                                                                                                                                                                                                                                 | `49.6` (49.6 dB)                                |
+| `DUMP978_AUTOGAIN_ADJUSTMENT_LIMITS`         | If set to `true`/`on`/`yes`/`1`, while in the initialization phase, autogain will only adjust the gain during the timeframe set by the `DUMP978_AUTOGAIN_ADJUSTMENT_TIMEFRAME` parameter.                                                                                                                         | `true`                                          |
+| `DUMP978_AUTOGAIN_ADJUSTMENT_TIMEFRAME`      | Timeframe limits for autogain during the initializaion phase, in `HHMM-HHMM` (start hours/minutes to end hours/minutes). If an adjustment "run" falls outside these limits, the autogain adjustment is delayed until the start of the next timeframe. Times are based on the container's Timezone (`TZ`) setting. | `0900-1800` (9 AM - 6 PM, local container time) |
+| `DUMP978_AUTOGAIN_LOW_PCT`                   | If the percentage of "strong signals" (>3.5dB) over a measuring period is less than this parameter, the gain will be increased by 1 position                                                                                                                                                                      | `5.0` (5.0%)                                    |
+| `DUMP978_AUTOGAIN_HIGH_PCT`                  | If the percentage of "strong signals" (>3.5dB) over a measuring period is more than this parameter, the gain will be decreased by 1 position                                                                                                                                                                      | `10.0` (10.0%)                                  |
+| `READSB_AUTOGAIN_MIN_SAMPLES`                | Minimum number of received samples for autogain to be able to consider adjusting the gain                                                                                                                                                                                                                         | `1000`                                          |
+| `READSB_AUTOGAIN_USE_RAW`                    | If set to `true`/`on`/`yes`/`1`, the autogain function will use the "raw" message count rather than the "accepted" message count.                                                                                                                                                                                 | `true`                                          |
+| `SUBSEQUENT_INTERVAL_MINIMUM_COMPLETION_PCT` | Minimum percentage of `DUMP978_AUTOGAIN_SUBSEQUENT_INTERVAL` time that needs to be completed before autogain will use the collected data during the subsequent/long-term process                                                                                                                                  | `50`                                            |
 
 ## Autogain system
 
@@ -369,7 +369,7 @@ The autogain system will work as follows; values are based on the default parame
 
 ### Forcing autogain to re-run from scratch
 
-Run `docker exec dump978 autogain978 reset` to remove reset all autogain data and start the initialization phase fron scratch
+Run `docker exec dump978 autogain978 reset` to remove reset all autogain data and start the initialization phase from scratch
 
 ### Container log messages while gain adjustments are made
 

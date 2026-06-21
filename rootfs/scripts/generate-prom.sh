@@ -17,5 +17,3 @@ while sleep 60; do
     generate > "$TMP"
     mv -f "$TMP" "$OUT"
 done
-
-

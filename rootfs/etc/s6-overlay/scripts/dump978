@@ -71,6 +71,6 @@ waittime="$((RANDOM % 10))"
 "${s6wrap[@]}" echo "In $waittime secs: invoking: ${DUMP978_BIN} ${DUMP978_CMD[*]}"
 sleep "$waittime"
 # shellcheck disable=SC2068
-exec "${s6wrap[@]}" ${DUMP978_BIN} ${DUMP978_CMD[@]} 
+exec "${s6wrap[@]}" ${DUMP978_BIN} ${DUMP978_CMD[@]}
 
 sleep 5
