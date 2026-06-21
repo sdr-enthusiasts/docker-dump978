@@ -51,7 +51,7 @@ fi
 services=($(basename -a $(find /run/service/ -maxdepth 1 -type l)))
 # For each service...
 for service in "${services[@]}"; do
-    if [[ "${service:0:5}" != "s6rc-" ]]; then 
+    if [[ "${service:0:5}" != "s6rc-" ]]; then
         abnormal_deaths="$(s6-svdt -s "/run/service/$service" | awk '/exitcode/ && !/exitcode 0/' | wc -l)"
         if (( abnormal_deaths > 0 )); then
             echo "[$(date)][UNHEALTHY] abnormal death count for service $service is $abnormal_deaths"
