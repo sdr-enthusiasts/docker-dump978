@@ -24,7 +24,7 @@ case "${DUMP978_DEVICE_TYPE:-rtlsdr}" in
     *)
         "${s6wrap[@]}" echo "ERROR: Unsupported DUMP978_DEVICE_TYPE!"
         sleep 60
-        exit 1
+        exit 78
     ;;
 esac
 
