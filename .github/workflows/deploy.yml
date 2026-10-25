@@ -11,6 +11,11 @@ on:
         type: boolean
         description: "Use base image testpr"
         default: false
+      base_variant:
+        required: false
+        type: string
+        description: "Debian codename to build on the next-release base images (e.g. forky). Blank builds on stable."
+        default: ""
 
 env:
   GHCR_IMAGE: sdr-enthusiasts/docker-dump978
@@ -32,13 +37,15 @@ jobs:
         env:
           INPUTS_REASON: ${{ github.event.inputs.reason }}
           INPUTS_USE_TEST_IMAGE: ${{ github.event.inputs.use_test_image }}
+          INPUTS_BASE_VARIANT: ${{ github.event.inputs.base_variant }}
         run: |
           echo "Workflow dispatch reason: $INPUTS_REASON"
           echo "Use test image: $INPUTS_USE_TEST_IMAGE"
+          echo "Base variant: ${INPUTS_BASE_VARIANT:-none (stable)}"
 
   deploy:
     name: Deploy without telegraf
-    uses: sdr-enthusiasts/common-github-workflows/.github/workflows/sdre.yml@89445b76aa108b0cb2cc74bba17b3ac3b502b6b1 # main
+    uses: sdr-enthusiasts/common-github-workflows/.github/workflows/sdre.yml@6fe78a4f1b7ab06ae480c7d2bb304f3a6c39055b # main
     with:
       push_enabled: true
       push_destinations: ghcr.io
@@ -48,12 +55,13 @@ jobs:
       build_latest: ${{ github.event.inputs.use_test_image == 'false' || github.event.inputs.use_test_image == '' }}
       build_baseimage_test: ${{ github.event.inputs.use_test_image == 'true' }}
       build_baseimage_url: :wreadsb/:wreadsb-test-pr/g;s/:dump978-full/:dump978-full-test-pr
+      base_variant: ${{ github.event.inputs.base_variant }}
     secrets:
       ghcr_token: ${{ secrets.GITHUB_TOKEN }}
 
   deploy_with_telegraf:
     name: Deploy with telegraf and healthcheck
-    uses: sdr-enthusiasts/common-github-workflows/.github/workflows/sdre.yml@89445b76aa108b0cb2cc74bba17b3ac3b502b6b1 # main
+    uses: sdr-enthusiasts/common-github-workflows/.github/workflows/sdre.yml@6fe78a4f1b7ab06ae480c7d2bb304f3a6c39055b # main
     with:
       push_enabled: true
       push_destinations: ghcr.io
@@ -66,5 +74,6 @@ jobs:
       docker_latest_tag: telegraf
       dockerfile_changes: |
         ##telegraf##/
+      base_variant: ${{ github.event.inputs.base_variant }}
     secrets:
       ghcr_token: ${{ secrets.GITHUB_TOKEN }}
