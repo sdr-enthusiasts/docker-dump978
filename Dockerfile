@@ -30,6 +30,8 @@ RUN set -x && \
     TEMP_PACKAGES+=(curl) && \
     # Required for nicer logging.
     KEPT_PACKAGES+=(gawk) && \
+    # setcap, for lighttpd below; forky no longer pulls it in indirectly
+    KEPT_PACKAGES+=(libcap2-bin) && \
     ##telegraf##KEPT_PACKAGES+=(python3) && \
     # uat2esnt dependencies (+ telegraf)
     KEPT_PACKAGES+=(socat) && \
