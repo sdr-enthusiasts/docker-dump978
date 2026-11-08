@@ -49,8 +49,8 @@ RUN set -x && \
     # ensure lighttpd can bind to port 80
     setcap 'cap_net_bind_service=+ep' /usr/sbin/lighttpd && \
     # grab the bias t scripts
-    curl -o /etc/s6-overlay/scripts/05-rtlsdr-biastee-init https://raw.githubusercontent.com/sdr-enthusiasts/sdre-bias-t-common/main/09-rtlsdr-biastee-init && \
-    curl -o /etc/s6-overlay/scripts/05-rtlsdr-biastee-down https://raw.githubusercontent.com/sdr-enthusiasts/sdre-bias-t-common/main/09-rtlsdr-biastee-down && \
+    curl --fail --retry 3 --location -o /etc/s6-overlay/scripts/05-rtlsdr-biastee-init https://raw.githubusercontent.com/sdr-enthusiasts/sdre-bias-t-common/main/09-rtlsdr-biastee-init && \
+    curl --fail --retry 3 --location -o /etc/s6-overlay/scripts/05-rtlsdr-biastee-down https://raw.githubusercontent.com/sdr-enthusiasts/sdre-bias-t-common/main/09-rtlsdr-biastee-down && \
     chmod +x /etc/s6-overlay/scripts/05-rtlsdr-biastee-init && \
     chmod +x /etc/s6-overlay/scripts/05-rtlsdr-biastee-down && \
     mkdir -p /run/skyaware978 && \
